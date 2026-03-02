@@ -88,7 +88,34 @@ def home():
 
 @app.route("/dashboard")
 def dashboard():
-    return render_template("dashboard.html")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT store, dept, date, weekly_sales FROM sales LIMIT 20")
+    rows = cursor.fetchall()
+
+    cursor.execute("SELECT SUM(weekly_sales) FROM sales")
+    total_sales = cursor.fetchone()[0]
+
+    cursor.execute("SELECT AVG(weekly_sales) FROM sales")
+    avg_sales = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(DISTINCT store) FROM sales")
+    total_stores = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(DISTINCT dept) FROM sales")
+    total_depts = cursor.fetchone()[0]
+
+    conn.close()
+
+    return render_template(
+        "dashboard.html",
+        data=rows,
+        total_sales=total_sales,
+        avg_sales=avg_sales,
+        total_stores=total_stores,
+        total_depts=total_depts
+    )
 
 @app.route("/test-db")
 def test_db():
