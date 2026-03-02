@@ -1,1 +1,69 @@
-<h2>Dashboard Coming Soon</h2>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sales Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Sales Dashboard</h2>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary p-3">
+                <h6>Total Sales</h6>
+                <h5>{{ "{:,.2f}".format(total_sales) }}</h5>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white bg-success p-3">
+                <h6>Average Weekly Sales</h6>
+                <h5>{{ "{:,.2f}".format(avg_sales) }}</h5>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white bg-warning p-3">
+                <h6>Total Stores</h6>
+                <h5>{{ total_stores }}</h5>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white bg-danger p-3">
+                <h6>Total Departments</h6>
+                <h5>{{ total_depts }}</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Table -->
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Store</th>
+                <th>Department</th>
+                <th>Date</th>
+                <th>Weekly Sales</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+            <tr>
+                <td>{{ row["store"] }}</td>
+                <td>{{ row["dept"] }}</td>
+                <td>{{ row["date"] }}</td>
+                <td>{{ row["weekly_sales"] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+</body>
+</html>
