@@ -1,20 +1,16 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import sqlite3
 import pandas as pd
 
 app = Flask(__name__)
 
-# -----------------------------
 # DATABASE CONNECTION
-# -----------------------------
 def get_db_connection():
     conn = sqlite3.connect("inventory.db")
     conn.row_factory = sqlite3.Row
     return conn
 
-# -----------------------------
 # DATABASE INITIALIZATION
-# -----------------------------
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -54,9 +50,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# -----------------------------
 # LOAD DATA INTO DATABASE
-# -----------------------------
 def load_data():
     df = pd.read_csv("data/clean_sales.csv")
 
@@ -78,9 +72,7 @@ def load_data():
     conn.commit()
     conn.close()
 
-# -----------------------------
 # ROUTES
-# -----------------------------
 
 @app.route("/")
 def home():
@@ -88,17 +80,42 @@ def home():
 
 @app.route("/dashboard")
 def dashboard():
+    store = request.args.get("store")
+    dept = request.args.get("dept")
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT store, dept, date, weekly_sales FROM sales LIMIT 20")
+    query = "SELECT store, dept, date, weekly_sales FROM sales"
+    conditions = []
+    params = []
+
+    if store:
+        conditions.append("store = ?")
+        params.append(store)
+
+    if dept:
+        conditions.append("dept = ?")
+        params.append(dept)
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
+    query += " LIMIT 20"
+
+    cursor.execute(query, params)
     rows = cursor.fetchall()
 
-    cursor.execute("SELECT SUM(weekly_sales) FROM sales")
-    total_sales = cursor.fetchone()[0]
+    # Analytics Query
+    analytics_query = "SELECT SUM(weekly_sales), AVG(weekly_sales) FROM sales"
+    if conditions:
+        analytics_query += " WHERE " + " AND ".join(conditions)
 
-    cursor.execute("SELECT AVG(weekly_sales) FROM sales")
-    avg_sales = cursor.fetchone()[0]
+    cursor.execute(analytics_query, params)
+    result = cursor.fetchone()
+
+    total_sales = result[0] if result[0] else 0
+    avg_sales = result[1] if result[1] else 0
 
     cursor.execute("SELECT COUNT(DISTINCT store) FROM sales")
     total_stores = cursor.fetchone()[0]
@@ -114,7 +131,9 @@ def dashboard():
         total_sales=total_sales,
         avg_sales=avg_sales,
         total_stores=total_stores,
-        total_depts=total_depts
+        total_depts=total_depts,
+        selected_store=store,
+        selected_dept=dept
     )
 
 @app.route("/test-db")
@@ -135,9 +154,6 @@ def check_data():
     conn.close()
     return f"Total rows in sales table: {count[0]}"
 
-# -----------------------------
-# MAIN
-# -----------------------------
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)
