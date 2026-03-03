@@ -132,6 +132,7 @@ def dashboard():
 def forecast():
 
     prediction = None
+    inventory_result = None
     selected_store = None
     selected_dept = None
 
@@ -151,10 +152,9 @@ def forecast():
         week = today.isocalendar()[1]
 
         features = [[store, dept, year, month, week]]
-
         prediction = model.predict(features)[0]
 
-        # Save prediction into database
+        # Save forecast
         cursor.execute("""
             INSERT INTO forecasts (store, dept, predicted_sales, prediction_date)
             VALUES (?, ?, ?, ?)
@@ -163,7 +163,27 @@ def forecast():
 
         conn.commit()
 
-    # Fetch last 10 predictions
+        # INVENTORY CALCULATIONS
+
+        ordering_cost = 1000
+        holding_cost = 0.1 * prediction
+        lead_time = 2
+        service_factor = 1.65
+        demand_std = 0.2 * prediction
+
+        annual_demand = prediction * 52
+
+        eoq = ((2 * annual_demand * ordering_cost) / holding_cost) ** 0.5
+        safety_stock = service_factor * demand_std * (lead_time ** 0.5)
+        reorder_point = (prediction * lead_time) + safety_stock
+
+        inventory_result = {
+            "eoq": round(eoq, 2),
+            "safety_stock": round(safety_stock, 2),
+            "reorder_point": round(reorder_point, 2)
+        }
+
+    # Fetch prediction history
     cursor.execute("""
         SELECT * FROM forecasts
         ORDER BY id DESC
@@ -176,6 +196,7 @@ def forecast():
     return render_template(
         "forecast.html",
         prediction=prediction,
+        inventory_result=inventory_result,
         selected_store=selected_store,
         selected_dept=selected_dept,
         prediction_history=prediction_history
