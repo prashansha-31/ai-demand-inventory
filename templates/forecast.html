@@ -14,17 +14,17 @@
         <div class="row mb-3">
             <div class="col">
                 <input type="number" name="store"
-       class="form-control"
-       placeholder="Store ID"
-       value="{{ selected_store or '' }}"
-       required>
+                       class="form-control"
+                       placeholder="Store ID"
+                       value="{{ selected_store or '' }}"
+                       required>
             </div>
             <div class="col">
                 <input type="number" name="dept"
-       class="form-control"
-       placeholder="Department ID"
-       value="{{ selected_dept or '' }}"
-       required>
+                       class="form-control"
+                       placeholder="Department ID"
+                       value="{{ selected_dept or '' }}"
+                       required>
             </div>
         </div>
 
@@ -32,18 +32,46 @@
     </form>
 
     {% if prediction %}
-<div class="alert alert-success mt-4">
-    <h5>Prediction Result</h5>
-    <p>
-        Store ID: <strong>{{ selected_store }}</strong> |
-        Department ID: <strong>{{ selected_dept }}</strong>
-    </p>
-    <p>
-        Predicted Weekly Sales:
-        <strong>{{ prediction | round(2) }}</strong>
-    </p>
-</div>
-{% endif %}
+    <div class="alert alert-success mt-4">
+        <h5>Prediction Result</h5>
+        <p>
+            Store ID: <strong>{{ selected_store }}</strong> |
+            Department ID: <strong>{{ selected_dept }}</strong>
+        </p>
+        <p>
+            Predicted Weekly Sales:
+            <strong>{{ prediction | round(2) }}</strong>
+        </p>
+    </div>
+    {% endif %}
+
+    {% if prediction_history %}
+    <hr class="mt-4">
+    <h4>Recent Predictions</h4>
+
+    <table class="table table-bordered mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Store</th>
+                <th>Dept</th>
+                <th>Predicted Sales</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in prediction_history %}
+            <tr>
+                <td>{{ row[0] }}</td>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+                <td>{{ row[3] | round(2) }}</td>
+                <td>{{ row[4] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
 
 </div>
 

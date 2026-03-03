@@ -6,9 +6,10 @@ import datetime
 
 app = Flask(__name__)
 
-# Load trained ML model
+# Load Trained ML Model
 with open("models/demand_model.pkl", "rb") as f:
     model = pickle.load(f)
+
 
 # DATABASE CONNECTION
 def get_db_connection():
@@ -16,11 +17,13 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+
 # DATABASE INITIALIZATION
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Sales Table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS sales (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,16 +35,18 @@ def init_db():
         )
     """)
 
+    # Forecasts Table (Single Clean Version)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS forecasts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             store INTEGER,
             dept INTEGER,
-            forecast_date TEXT,
-            predicted_sales REAL
+            predicted_sales REAL,
+            prediction_date TEXT
         )
     """)
 
+    # Inventory Policy Table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS inventory_policy (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,33 +61,13 @@ def init_db():
     conn.commit()
     conn.close()
 
-# LOAD DATA INTO DATABASE
-def load_data():
-    df = pd.read_csv("data/clean_sales.csv")
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    for _, row in df.iterrows():
-        cursor.execute("""
-            INSERT INTO sales (store, dept, date, weekly_sales, is_holiday)
-            VALUES (?, ?, ?, ?, ?)
-        """, (
-            int(row["store"]),
-            int(row["dept"]),
-            str(row["date"]),
-            float(row["weekly_sales"]),
-            int(row["isholiday"])
-        ))
-
-    conn.commit()
-    conn.close()
 
 # ROUTES
 
 @app.route("/")
 def home():
     return render_template("index.html")
+
 
 @app.route("/dashboard")
 def dashboard():
@@ -112,7 +97,7 @@ def dashboard():
     cursor.execute(query, params)
     rows = cursor.fetchall()
 
-    # Analytics Query
+    # Analytics
     analytics_query = "SELECT SUM(weekly_sales), AVG(weekly_sales) FROM sales"
     if conditions:
         analytics_query += " WHERE " + " AND ".join(conditions)
@@ -142,23 +127,6 @@ def dashboard():
         selected_dept=dept
     )
 
-@app.route("/test-db")
-def test_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = cursor.fetchall()
-    conn.close()
-    return str(tables)
-
-@app.route("/check-data")
-def check_data():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM sales")
-    count = cursor.fetchone()
-    conn.close()
-    return f"Total rows in sales table: {count[0]}"
 
 @app.route("/forecast", methods=["GET", "POST"])
 def forecast():
@@ -166,6 +134,9 @@ def forecast():
     prediction = None
     selected_store = None
     selected_dept = None
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
     if request.method == "POST":
         selected_store = request.form["store"]
@@ -183,15 +154,45 @@ def forecast():
 
         prediction = model.predict(features)[0]
 
+        # Save prediction into database
+        cursor.execute("""
+            INSERT INTO forecasts (store, dept, predicted_sales, prediction_date)
+            VALUES (?, ?, ?, ?)
+        """, (store, dept, float(prediction),
+              today.strftime("%Y-%m-%d %H:%M:%S")))
+
+        conn.commit()
+
+    # Fetch last 10 predictions
+    cursor.execute("""
+        SELECT * FROM forecasts
+        ORDER BY id DESC
+        LIMIT 10
+    """)
+    prediction_history = cursor.fetchall()
+
+    conn.close()
+
     return render_template(
         "forecast.html",
         prediction=prediction,
         selected_store=selected_store,
-        selected_dept=selected_dept
+        selected_dept=selected_dept,
+        prediction_history=prediction_history
     )
 
 
+@app.route("/check-data")
+def check_data():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM sales")
+    count = cursor.fetchone()[0]
+    conn.close()
+    return f"Total rows in sales table: {count}"
 
+
+# MAIN
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)
