@@ -3,34 +3,35 @@ import sqlite3
 import pandas as pd
 import pickle
 import datetime
+import json
 import math
 
 app = Flask(__name__)
 
-# ==============================
-# LOAD TRAINED MODEL
-# ==============================
+# =========================
+# LOAD ML MODEL
+# =========================
 with open("models/demand_model.pkl", "rb") as f:
     model = pickle.load(f)
 
 
-# ==============================
+# =========================
 # DATABASE CONNECTION
-# ==============================
+# =========================
 def get_db_connection():
     conn = sqlite3.connect("inventory.db")
     conn.row_factory = sqlite3.Row
     return conn
 
 
-# ==============================
+# =========================
 # DATABASE INITIALIZATION
-# ==============================
+# =========================
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # SALES TABLE
+    # Sales table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS sales (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +43,7 @@ def init_db():
         )
     """)
 
-    # FORECAST TABLE
+    # Forecast table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS forecasts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,7 +54,7 @@ def init_db():
         )
     """)
 
-    # INVENTORY POLICY TABLE (CORRECT STRUCTURE)
+    # Inventory policy table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS inventory_policy (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,48 +72,17 @@ def init_db():
     conn.close()
 
 
-# ==============================
-# LOAD CLEAN DATA INTO SALES TABLE (RUN ONCE IF EMPTY)
-# ==============================
-def load_data_if_empty():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT COUNT(*) FROM sales")
-    count = cursor.fetchone()[0]
-
-    if count == 0:
-        df = pd.read_csv("data/clean_sales.csv")
-
-        for _, row in df.iterrows():
-            cursor.execute("""
-                INSERT INTO sales (store, dept, date, weekly_sales, is_holiday)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                int(row["store"]),
-                int(row["dept"]),
-                str(row["date"]),
-                float(row["weekly_sales"]),
-                int(row["isholiday"])
-            ))
-
-        conn.commit()
-
-    conn.close()
-
-
-# ==============================
-# ROUTES
-# ==============================
-
+# =========================
+# HOME
+# =========================
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
-# ==============================
-# DASHBOARD ROUTE (NOT REMOVED)
-# ==============================
+# =========================
+# DASHBOARD
+# =========================
 @app.route("/dashboard")
 def dashboard():
     store = request.args.get("store")
@@ -141,12 +111,7 @@ def dashboard():
     cursor.execute(query, params)
     rows = cursor.fetchall()
 
-    # Analytics
-    analytics_query = "SELECT SUM(weekly_sales), AVG(weekly_sales) FROM sales"
-    if conditions:
-        analytics_query += " WHERE " + " AND ".join(conditions)
-
-    cursor.execute(analytics_query, params)
+    cursor.execute("SELECT SUM(weekly_sales), AVG(weekly_sales) FROM sales")
     result = cursor.fetchone()
 
     total_sales = result[0] if result[0] else 0
@@ -166,15 +131,13 @@ def dashboard():
         total_sales=total_sales,
         avg_sales=avg_sales,
         total_stores=total_stores,
-        total_depts=total_depts,
-        selected_store=store,
-        selected_dept=dept
+        total_depts=total_depts
     )
 
 
-# ==============================
-# FORECAST + INVENTORY ROUTE
-# ==============================
+# =========================
+# FORECAST + INVENTORY
+# =========================
 @app.route("/forecast", methods=["GET", "POST"])
 def forecast():
 
@@ -207,17 +170,17 @@ def forecast():
             VALUES (?, ?, ?, ?)
         """, (store, dept, prediction, today.strftime("%Y-%m-%d %H:%M:%S")))
 
-        # ==============================
-        # INVENTORY CALCULATIONS
-        # ==============================
-
-        ordering_cost = 500
+        # =====================
+        # INVENTORY CALCULATION
+        # =====================
+        ordering_cost = 50
         holding_cost = 2
-        lead_time = 2  # weeks
-        service_level_z = 1.65
+        lead_time = 2
+        z = 1.65
+        demand_variability = 0.1 * prediction
 
         eoq = math.sqrt((2 * prediction * ordering_cost) / holding_cost)
-        safety_stock = service_level_z * math.sqrt(lead_time) * (prediction * 0.1)
+        safety_stock = z * math.sqrt(lead_time) * demand_variability
         reorder_point = (prediction * lead_time) + safety_stock
 
         inventory_result = {
@@ -228,7 +191,7 @@ def forecast():
 
         # Save inventory policy
         cursor.execute("""
-            INSERT INTO inventory_policy 
+            INSERT INTO inventory_policy
             (store, dept, predicted_sales, eoq, safety_stock, reorder_point, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -245,28 +208,41 @@ def forecast():
 
     # Fetch history
     cursor.execute("SELECT * FROM forecasts ORDER BY id DESC LIMIT 10")
-    prediction_history = cursor.fetchall()
+    prediction_rows = cursor.fetchall()
+
+    prediction_history = [dict(row) for row in prediction_rows]
 
     cursor.execute("SELECT * FROM inventory_policy ORDER BY id DESC LIMIT 10")
-    inventory_history = cursor.fetchall()
+    inventory_rows = cursor.fetchall()
+
+    inventory_history = [dict(row) for row in inventory_rows]
+
+    # Prepare JSON chart data
+    forecast_chart_data = json.dumps([
+        {"date": row["prediction_date"], "sales": row["predicted_sales"]}
+        for row in prediction_history
+    ])
+
+    inventory_chart_data = json.dumps([
+        {"date": row["created_at"], "reorder": row["reorder_point"]}
+        for row in inventory_history
+    ])
 
     conn.close()
 
     return render_template(
         "forecast.html",
         prediction=prediction,
-        inventory_result=inventory_result,
         selected_store=selected_store,
         selected_dept=selected_dept,
+        inventory_result=inventory_result,
         prediction_history=prediction_history,
-        inventory_history=inventory_history
+        inventory_history=inventory_history,
+        forecast_chart_data=forecast_chart_data,
+        inventory_chart_data=inventory_chart_data
     )
 
 
-# ==============================
-# RUN APP
-# ==============================
 if __name__ == "__main__":
     init_db()
-    load_data_if_empty()
     app.run(debug=True)
