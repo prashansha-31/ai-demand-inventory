@@ -1,8 +1,14 @@
 from flask import Flask, render_template, request
 import sqlite3
 import pandas as pd
+import pickle
+import datetime
 
 app = Flask(__name__)
+
+# Load trained ML model
+with open("models/demand_model.pkl", "rb") as f:
+    model = pickle.load(f)
 
 # DATABASE CONNECTION
 def get_db_connection():
@@ -153,6 +159,38 @@ def check_data():
     count = cursor.fetchone()
     conn.close()
     return f"Total rows in sales table: {count[0]}"
+
+@app.route("/forecast", methods=["GET", "POST"])
+def forecast():
+
+    prediction = None
+    selected_store = None
+    selected_dept = None
+
+    if request.method == "POST":
+        selected_store = request.form["store"]
+        selected_dept = request.form["dept"]
+
+        store = int(selected_store)
+        dept = int(selected_dept)
+
+        today = datetime.datetime.now()
+        year = today.year
+        month = today.month
+        week = today.isocalendar()[1]
+
+        features = [[store, dept, year, month, week]]
+
+        prediction = model.predict(features)[0]
+
+    return render_template(
+        "forecast.html",
+        prediction=prediction,
+        selected_store=selected_store,
+        selected_dept=selected_dept
+    )
+
+
 
 if __name__ == "__main__":
     init_db()
