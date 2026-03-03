@@ -88,34 +88,53 @@ Sales Data → ML Model → Demand Prediction → Inventory Optimization → Dat
 
 ---
 
-## 📐 Inventory Optimization Formulas
+## 📐 Inventory Optimization Logic
 
 ### 📦 Economic Order Quantity (EOQ)
 
-\[
-EOQ = \sqrt{\frac{2DS}{H}}
-\]
+EOQ determines the optimal order quantity that minimizes total inventory cost.
+
+**Formula:**
+
+EOQ = √( (2 × D × S) / H )
 
 Where:
-- D = Predicted Demand
-- S = Ordering Cost
-- H = Holding Cost
+
+- D = Predicted Demand  
+- S = Ordering Cost per order  
+- H = Holding Cost per unit  
 
 ---
 
 ### 🛡 Safety Stock
 
-\[
-Safety\ Stock = Z \times \sqrt{Lead\ Time} \times Demand\ Variability
-\]
+Safety Stock protects against demand variability and supply delays.
+
+**Formula:**
+
+Safety Stock = Z × √(Lead Time) × Demand Variability
+
+Where:
+
+- Z = Service level factor (e.g., 1.65 for 95% service level)  
+- Lead Time = Time required to replenish inventory  
+- Demand Variability = Standard deviation of demand  
 
 ---
 
 ### 📍 Reorder Point
 
-\[
-Reorder\ Point = (Demand \times Lead\ Time) + Safety\ Stock
-\]
+Reorder Point indicates when a new order should be placed.
+
+**Formula:**
+
+Reorder Point = (Demand × Lead Time) + Safety Stock
+
+Where:
+
+- Demand = Predicted weekly demand  
+- Lead Time = Replenishment time  
+- Safety Stock = Buffer stock maintained
 
 ---
 
