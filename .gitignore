@@ -1,4 +1,5 @@
 venv/
+inventory.db
+inventory.db-journal
 __pycache__/
 *.pyc
-inventory.db
