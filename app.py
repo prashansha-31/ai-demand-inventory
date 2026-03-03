@@ -3,27 +3,34 @@ import sqlite3
 import pandas as pd
 import pickle
 import datetime
+import math
 
 app = Flask(__name__)
 
-# Load Trained ML Model
+# ==============================
+# LOAD TRAINED MODEL
+# ==============================
 with open("models/demand_model.pkl", "rb") as f:
     model = pickle.load(f)
 
 
+# ==============================
 # DATABASE CONNECTION
+# ==============================
 def get_db_connection():
     conn = sqlite3.connect("inventory.db")
     conn.row_factory = sqlite3.Row
     return conn
 
 
+# ==============================
 # DATABASE INITIALIZATION
+# ==============================
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Sales Table
+    # SALES TABLE
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS sales (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,7 +42,7 @@ def init_db():
         )
     """)
 
-    # Forecasts Table (Single Clean Version)
+    # FORECAST TABLE
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS forecasts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,15 +53,17 @@ def init_db():
         )
     """)
 
-    # Inventory Policy Table
+    # INVENTORY POLICY TABLE (CORRECT STRUCTURE)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS inventory_policy (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             store INTEGER,
             dept INTEGER,
+            predicted_sales REAL,
+            eoq REAL,
             safety_stock REAL,
             reorder_point REAL,
-            eoq REAL
+            created_at TEXT
         )
     """)
 
@@ -62,13 +71,48 @@ def init_db():
     conn.close()
 
 
+# ==============================
+# LOAD CLEAN DATA INTO SALES TABLE (RUN ONCE IF EMPTY)
+# ==============================
+def load_data_if_empty():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM sales")
+    count = cursor.fetchone()[0]
+
+    if count == 0:
+        df = pd.read_csv("data/clean_sales.csv")
+
+        for _, row in df.iterrows():
+            cursor.execute("""
+                INSERT INTO sales (store, dept, date, weekly_sales, is_holiday)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                int(row["store"]),
+                int(row["dept"]),
+                str(row["date"]),
+                float(row["weekly_sales"]),
+                int(row["isholiday"])
+            ))
+
+        conn.commit()
+
+    conn.close()
+
+
+# ==============================
 # ROUTES
+# ==============================
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
+# ==============================
+# DASHBOARD ROUTE (NOT REMOVED)
+# ==============================
 @app.route("/dashboard")
 def dashboard():
     store = request.args.get("store")
@@ -128,6 +172,9 @@ def dashboard():
     )
 
 
+# ==============================
+# FORECAST + INVENTORY ROUTE
+# ==============================
 @app.route("/forecast", methods=["GET", "POST"])
 def forecast():
 
@@ -152,29 +199,25 @@ def forecast():
         week = today.isocalendar()[1]
 
         features = [[store, dept, year, month, week]]
-        prediction = model.predict(features)[0]
+        prediction = float(model.predict(features)[0])
 
         # Save forecast
         cursor.execute("""
             INSERT INTO forecasts (store, dept, predicted_sales, prediction_date)
             VALUES (?, ?, ?, ?)
-        """, (store, dept, float(prediction),
-              today.strftime("%Y-%m-%d %H:%M:%S")))
+        """, (store, dept, prediction, today.strftime("%Y-%m-%d %H:%M:%S")))
 
-        conn.commit()
-
+        # ==============================
         # INVENTORY CALCULATIONS
+        # ==============================
 
-        ordering_cost = 1000
-        holding_cost = 0.1 * prediction
-        lead_time = 2
-        service_factor = 1.65
-        demand_std = 0.2 * prediction
+        ordering_cost = 500
+        holding_cost = 2
+        lead_time = 2  # weeks
+        service_level_z = 1.65
 
-        annual_demand = prediction * 52
-
-        eoq = ((2 * annual_demand * ordering_cost) / holding_cost) ** 0.5
-        safety_stock = service_factor * demand_std * (lead_time ** 0.5)
+        eoq = math.sqrt((2 * prediction * ordering_cost) / holding_cost)
+        safety_stock = service_level_z * math.sqrt(lead_time) * (prediction * 0.1)
         reorder_point = (prediction * lead_time) + safety_stock
 
         inventory_result = {
@@ -183,13 +226,29 @@ def forecast():
             "reorder_point": round(reorder_point, 2)
         }
 
-    # Fetch prediction history
-    cursor.execute("""
-        SELECT * FROM forecasts
-        ORDER BY id DESC
-        LIMIT 10
-    """)
+        # Save inventory policy
+        cursor.execute("""
+            INSERT INTO inventory_policy 
+            (store, dept, predicted_sales, eoq, safety_stock, reorder_point, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            store,
+            dept,
+            prediction,
+            inventory_result["eoq"],
+            inventory_result["safety_stock"],
+            inventory_result["reorder_point"],
+            today.strftime("%Y-%m-%d %H:%M:%S")
+        ))
+
+        conn.commit()
+
+    # Fetch history
+    cursor.execute("SELECT * FROM forecasts ORDER BY id DESC LIMIT 10")
     prediction_history = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM inventory_policy ORDER BY id DESC LIMIT 10")
+    inventory_history = cursor.fetchall()
 
     conn.close()
 
@@ -199,59 +258,15 @@ def forecast():
         inventory_result=inventory_result,
         selected_store=selected_store,
         selected_dept=selected_dept,
-        prediction_history=prediction_history
+        prediction_history=prediction_history,
+        inventory_history=inventory_history
     )
 
 
-@app.route("/check-data")
-def check_data():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM sales")
-    count = cursor.fetchone()[0]
-    conn.close()
-    return f"Total rows in sales table: {count}"
-
-@app.route("/inventory", methods=["GET", "POST"])
-def inventory():
-
-    result = None
-
-    if request.method == "POST":
-
-        store = int(request.form["store"])
-        dept = int(request.form["dept"])
-        demand = float(request.form["demand"])
-
-        # Assumptions
-        ordering_cost = 1000
-        holding_cost = 0.1 * demand
-        lead_time = 2
-        service_factor = 1.65
-        demand_std = 0.2 * demand
-
-        # EOQ Calculation
-        annual_demand = demand * 52
-        eoq = ((2 * annual_demand * ordering_cost) / holding_cost) ** 0.5
-
-        # Safety Stock
-        safety_stock = service_factor * demand_std * (lead_time ** 0.5)
-
-        # Reorder Point
-        reorder_point = (demand * lead_time) + safety_stock
-
-        result = {
-            "store": store,
-            "dept": dept,
-            "eoq": round(eoq, 2),
-            "safety_stock": round(safety_stock, 2),
-            "reorder_point": round(reorder_point, 2)
-        }
-
-    return render_template("inventory.html", result=result)
-
-
-# MAIN
+# ==============================
+# RUN APP
+# ==============================
 if __name__ == "__main__":
     init_db()
+    load_data_if_empty()
     app.run(debug=True)

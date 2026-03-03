@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Demand Forecasting</title>
+    <title>AI Demand Forecasting & Inventory Optimization</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             padding: 40px;
+            background-color: #f4f6f9;
+        }
+
+        h2 {
+            margin-bottom: 20px;
         }
 
         input {
@@ -17,9 +22,10 @@
         button {
             padding: 8px 15px;
             margin-top: 10px;
+            cursor: pointer;
         }
 
-        .result-box {
+        .prediction-box {
             margin-top: 20px;
             padding: 20px;
             background-color: #d4edda;
@@ -34,9 +40,10 @@
         }
 
         table {
-            margin-top: 30px;
+            margin-top: 25px;
             border-collapse: collapse;
             width: 100%;
+            background-color: white;
         }
 
         th, td {
@@ -49,11 +56,15 @@
             background-color: #222;
             color: white;
         }
+
+        .section-title {
+            margin-top: 40px;
+        }
     </style>
 </head>
 <body>
 
-<h2>Demand Forecasting</h2>
+<h2>Demand Forecasting & Inventory Optimization</h2>
 
 <form method="POST">
     <input type="number" name="store" placeholder="Store ID"
@@ -63,24 +74,27 @@
            value="{{ selected_dept if selected_dept else '' }}" required>
 
     <br>
-    <button type="submit">Predict Demand</button>
+    <button type="submit">Predict & Optimize</button>
 </form>
 
 {% if prediction %}
-<div class="result-box">
-    <h3>Prediction Result</h3>
-    <p><strong>Store ID:</strong> {{ selected_store }} |
-       <strong>Department ID:</strong> {{ selected_dept }}</p>
-
-    <p><strong>Predicted Weekly Sales:</strong>
-        {{ "%.2f"|format(prediction) }}</p>
+<div class="prediction-box">
+    <h3>Forecast Result</h3>
+    <p>
+        <strong>Store:</strong> {{ selected_store }} |
+        <strong>Department:</strong> {{ selected_dept }}
+    </p>
+    <p>
+        <strong>Predicted Weekly Sales:</strong>
+        {{ "%.2f"|format(prediction) }}
+    </p>
 </div>
 {% endif %}
 
 
 {% if inventory_result %}
 <div class="inventory-box">
-    <h3>Recommended Inventory Policy</h3>
+    <h3>Automated Inventory Recommendation</h3>
     <p><strong>EOQ:</strong> {{ inventory_result.eoq }}</p>
     <p><strong>Safety Stock:</strong> {{ inventory_result.safety_stock }}</p>
     <p><strong>Reorder Point:</strong> {{ inventory_result.reorder_point }}</p>
@@ -88,7 +102,7 @@
 {% endif %}
 
 
-<h3>Recent Predictions</h3>
+<h3 class="section-title">Recent Forecast History</h3>
 
 <table>
     <tr>
@@ -106,6 +120,35 @@
         <td>{{ row.dept }}</td>
         <td>{{ "%.2f"|format(row.predicted_sales) }}</td>
         <td>{{ row.prediction_date }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+
+<h3 class="section-title">Inventory Policy History</h3>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Store</th>
+        <th>Dept</th>
+        <th>Predicted</th>
+        <th>EOQ</th>
+        <th>Safety Stock</th>
+        <th>Reorder Point</th>
+        <th>Date</th>
+    </tr>
+
+    {% for row in inventory_history %}
+    <tr>
+        <td>{{ row.id }}</td>
+        <td>{{ row.store }}</td>
+        <td>{{ row.dept }}</td>
+        <td>{{ "%.2f"|format(row.predicted_sales) }}</td>
+        <td>{{ "%.2f"|format(row.eoq) }}</td>
+        <td>{{ "%.2f"|format(row.safety_stock) }}</td>
+        <td>{{ "%.2f"|format(row.reorder_point) }}</td>
+        <td>{{ row.created_at }}</td>
     </tr>
     {% endfor %}
 </table>
