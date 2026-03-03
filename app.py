@@ -191,6 +191,44 @@ def check_data():
     conn.close()
     return f"Total rows in sales table: {count}"
 
+@app.route("/inventory", methods=["GET", "POST"])
+def inventory():
+
+    result = None
+
+    if request.method == "POST":
+
+        store = int(request.form["store"])
+        dept = int(request.form["dept"])
+        demand = float(request.form["demand"])
+
+        # Assumptions
+        ordering_cost = 1000
+        holding_cost = 0.1 * demand
+        lead_time = 2
+        service_factor = 1.65
+        demand_std = 0.2 * demand
+
+        # EOQ Calculation
+        annual_demand = demand * 52
+        eoq = ((2 * annual_demand * ordering_cost) / holding_cost) ** 0.5
+
+        # Safety Stock
+        safety_stock = service_factor * demand_std * (lead_time ** 0.5)
+
+        # Reorder Point
+        reorder_point = (demand * lead_time) + safety_stock
+
+        result = {
+            "store": store,
+            "dept": dept,
+            "eoq": round(eoq, 2),
+            "safety_stock": round(safety_stock, 2),
+            "reorder_point": round(reorder_point, 2)
+        }
+
+    return render_template("inventory.html", result=result)
+
 
 # MAIN
 if __name__ == "__main__":
