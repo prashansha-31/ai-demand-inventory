@@ -1,192 +1,234 @@
-# 📊 AI-Based Demand Forecasting & Inventory Optimization Platform
+# 🤖 AI-Based Demand Forecasting & Inventory Optimization Platform
 
-A full-stack AI-powered retail analytics system built using Flask and SQLite.
+## 📌 Overview
 
-This project implements real-time sales analytics, dynamic filtering, and database integration as a foundation for demand forecasting and inventory optimization.
+This project is a full-stack web application that integrates **machine learning-based demand forecasting** with **automated inventory optimization**.  
 
----
+The system simulates a real-world retail decision-support platform where historical sales data is analyzed, future demand is predicted, and optimal inventory policies are generated automatically.
 
-## 🚀 Project Overview
+It demonstrates the integration of:
 
-This platform allows users to:
-
-- View real-time sales analytics
-- Filter sales by Store and Department
-- Analyze Total Sales & Average Weekly Sales
-- Access a dynamic dashboard powered by SQL queries
-- Prepare data for Machine Learning forecasting
-
-The system integrates backend logic, database management, and frontend interaction into a scalable architecture.
+- 📊 Data Analytics  
+- 🤖 Machine Learning  
+- 📦 Inventory Optimization  
+- 🗄 Database Management  
+- 🌐 Web Application Development  
 
 ---
 
-## 🧱 System Architecture
+## 🎯 Objectives
 
-Frontend (HTML + Bootstrap)  
-⬇  
-Flask Backend (Python)  
-⬇  
-SQLite Database  
-⬇  
-Sales Dataset (843,000+ records)
+- Analyze historical retail sales data.
+- Predict weekly demand using a trained machine learning model.
+- Automatically compute optimal inventory policies.
+- Store forecast and optimization results in a relational database.
+- Provide an interactive web-based dashboard for decision support.
 
 ---
 
-## 🛠 Tech Stack
-
-- **Backend:** Flask (Python)
-- **Database:** SQLite
-- **Data Processing:** Pandas
-- **Frontend:** HTML, Bootstrap 5
-- **Version Control:** Git & GitHub
-
----
-
-## 📅 Development Progress
-
-### ✅ Day 1 – Project Setup
-- Flask initialization
-- Project folder structure
-- Virtual environment setup
-- Basic routes (`/`, `/dashboard`)
-- GitHub repository setup
-
----
-
-### ✅ Day 2 – Database Integration
-- SQLite database created
-- Tables implemented:
-  - `sales`
-  - `forecasts`
-  - `inventory_policy`
-- Dataset cleaned using Pandas
-- 843,000+ records inserted into database
-- Backend successfully connected to database
-
----
-
-### ✅ Day 3 – Analytics Dashboard
-- Dynamic data fetching from SQLite
-- SQL aggregation queries implemented:
-  - Total Sales (SUM)
-  - Average Weekly Sales (AVG)
-  - Total Stores (COUNT DISTINCT)
-  - Total Departments (COUNT DISTINCT)
-- Professional summary cards added
-- Real-time dashboard rendering
-
----
-
-### ✅ Day 4 – Interactive Filtering System
-- Dynamic filtering by:
-  - Store
-  - Department
-- SQL WHERE clause generation
-- Filter-based analytics recalculation
-- Reset functionality implemented
-- Fully interactive dashboard
-
----
-
-## 📊 Current Features
-
-✔ Live sales analytics  
-✔ Dynamic filtering system  
-✔ Real-time SQL aggregation  
-✔ Professional Bootstrap UI  
-✔ Scalable full-stack structure  
-✔ Clean project architecture  
-
----
-
-## 📂 Project Structure
+## 🏗 System Architecture
 
 ```
-ai-demand-inventory/
+Sales Data → ML Model → Demand Prediction → Inventory Optimization → Database Storage → Web Dashboard
+```
+
+### 🔹 Architecture Layers
+
+### 1️⃣ Data Layer
+- Cleaned historical sales dataset (CSV)
+- SQLite database for persistent storage
+- Automatic schema initialization
+
+### 2️⃣ Machine Learning Layer
+- Pre-trained regression model (Pickle)
+- Time-based feature engineering (year, month, week)
+- Real-time demand prediction
+
+### 3️⃣ Optimization Layer
+- 📐 Economic Order Quantity (EOQ)
+- 📊 Safety Stock calculation
+- 📍 Reorder Point computation
+- Automated integration with forecast output
+
+### 4️⃣ Application Layer
+- Flask web framework
+- Interactive sales dashboard
+- Forecasting interface
+- Inventory recommendation engine
+- Historical tracking tables
+
+---
+
+## ✨ Key Features
+
+### 📊 Sales Dashboard
+- Filter by Store and Department
+- Display recent sales records
+- Calculate total and average weekly sales
+- View distinct store and department counts
+
+### 🔮 Demand Forecasting
+- Input Store ID and Department ID
+- Generate real-time weekly demand prediction
+- Store predictions with timestamps
+- Display forecast history
+
+### 📦 Automated Inventory Optimization
+- EOQ calculation
+- Safety Stock estimation
+- Reorder Point determination
+- Automatic storage of inventory policies
+- Inventory decision history tracking
+
+### 🗂 Persistent Data Management
+- SQLite integration
+- Automatic table creation
+- Forecast and policy logs
+- Structured database design
+
+---
+
+## 📐 Inventory Optimization Formulas
+
+### 📦 Economic Order Quantity (EOQ)
+
+\[
+EOQ = \sqrt{\frac{2DS}{H}}
+\]
+
+Where:
+- D = Predicted Demand
+- S = Ordering Cost
+- H = Holding Cost
+
+---
+
+### 🛡 Safety Stock
+
+\[
+Safety\ Stock = Z \times \sqrt{Lead\ Time} \times Demand\ Variability
+\]
+
+---
+
+### 📍 Reorder Point
+
+\[
+Reorder\ Point = (Demand \times Lead\ Time) + Safety\ Stock
+\]
+
+---
+
+## 🔄 Workflow
+
+1. 📥 Historical sales data loaded into database.
+2. 🧑‍💼 User selects store and department.
+3. 🤖 ML model predicts weekly demand.
+4. 📦 Inventory engine calculates optimal policy.
+5. 🗄 Forecast and optimization results stored.
+6. 📊 Historical records displayed for monitoring.
+
+---
+
+## 🛠 Technology Stack
+
+- 🐍 Python
+- 🌐 Flask
+- 🗄 SQLite
+- 📊 Pandas
+- 🔢 NumPy
+- 🤖 Scikit-learn
+- 🧾 HTML / CSS
+- 📦 Pickle (Model Serialization)
+
+---
+
+## 📁 Project Structure
+
+```
+AI-Demand-Inventory/
 │
-├── app.py
-├── inventory.db
-├── requirements.txt
-├── README.md
-│
-├── data/
-│   ├── sales.csv
+├── 📁 data/
 │   └── clean_sales.csv
 │
-├── models/
-│   └── eda_analysis.py
+├── 📁 models/
+│   └── demand_model.pkl
 │
-├── templates/
+├── 📁 templates/
 │   ├── index.html
-│   └── dashboard.html
+│   ├── dashboard.html
+│   └── forecast.html
 │
-└── static/
+├── 📁 static/
+│
+├── app.py
+├── requirements.txt
+├── README.md
+└── .gitignore
 ```
 
 ---
 
-## ▶ How to Run
+## ▶️ Installation & Setup
 
-1️⃣ Create virtual environment:
+### 1️⃣ Clone Repository
+
+```
+git clone https://github.com/prashansha-31/ai-demand-inventory.git
+cd AI-Demand-Inventory
+```
+
+### 2️⃣ Create Virtual Environment
 
 ```
 python -m venv venv
 ```
 
-2️⃣ Activate environment (Windows):
+Activate:
 
+**Windows**
 ```
 venv\Scripts\activate
 ```
 
-3️⃣ Install dependencies:
+**Mac/Linux**
+```
+source venv/bin/activate
+```
+
+### 3️⃣ Install Dependencies
 
 ```
 pip install -r requirements.txt
 ```
 
-4️⃣ Run application:
+### 4️⃣ Run Application
 
 ```
 python app.py
 ```
 
-5️⃣ Open in browser:
+### 5️⃣ Open in Browser
 
 ```
-http://127.0.0.1:5000
+http://127.0.0.1:5000/
 ```
 
 ---
 
-## 🔮 Upcoming Features
+## 🚀 Future Enhancements
 
-- Machine Learning Demand Forecasting
-- Sales Trend Visualization (Charts)
-- Forecast storage in `forecasts` table
-- Inventory Optimization (EOQ, Safety Stock, Reorder Point)
-- Model performance evaluation
-
----
-
-## 🎯 Academic Objective
-
-This project demonstrates:
-
-- End-to-end system design
-- Backend + Database integration
-- Data-driven analytics
-- Interactive dashboard engineering
-- Foundation for AI-powered retail forecasting
+- 📊 Interactive charts and visualization
+- 📅 Multi-week forecasting
+- 🔬 Advanced model tuning
+- 🔐 User authentication
+- 🌍 Cloud deployment
+- 📈 Performance monitoring dashboard
 
 ---
 
-## 👥 Team T-24
+## 🏁 Conclusion
 
-- **Prashansha Maheshwari(Team Leader)** – Backend & Database Engineering  
-- **Abhishek Verma** – Data Processing & Analytics  
-- **Prateek Choudhary** – Frontend & UI Development  
+This platform demonstrates how **Machine Learning and Inventory Optimization** can be integrated into a unified decision-support system.  
 
----
-
-⭐ Developed as part of 2nd Year AIML Mini Project
+It highlights practical implementation of predictive analytics combined with operational models to improve supply chain efficiency and support data-driven retail management.
