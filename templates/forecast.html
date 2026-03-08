@@ -126,6 +126,171 @@
 
 </div>
 
+{% if mae and rmse %}
+<div class="card">
+    <h3>Model Performance</h3>
+
+    <div style="display:flex; gap:30px; margin-top:15px;">
+
+        <div style="flex:1;">
+            <h4>MAE</h4>
+            <h2 style="color:#dc2626;">
+                {{ mae }}
+            </h2>
+        </div>
+
+        <div style="flex:1;">
+            <h4>RMSE</h4>
+            <h2 style="color:#ea580c;">
+                {{ rmse }}
+            </h2>
+        </div>
+
+        <div style="flex:1;">
+            <h4>Model Status</h4>
+            <h2 style="color:#2563eb;">
+                {{ model_status }}
+            </h2>
+        </div>
+
+    </div>
+
+    <div class="card">
+    <h3>Forecast Stability Analysis</h3>
+
+    <p><strong>Volatility Score:</strong> ₹ {{ volatility }}</p>
+
+    <p><strong>Stability Level:</strong>
+        {% if stability_status == "Very Stable" %}
+            <span style="color:green; font-weight:bold;">{{ stability_status }}</span>
+        {% elif stability_status == "Moderately Stable" %}
+            <span style="color:orange; font-weight:bold;">{{ stability_status }}</span>
+        {% else %}
+            <span style="color:red; font-weight:bold;">{{ stability_status }}</span>
+        {% endif %}
+    </p>
+
+    <p style="font-size: 14px; color: #555;">
+        Lower volatility indicates more consistent forecast behavior.
+    </p>
+</div>
+
+<div class="card">
+    <h3>Forecast Confidence Analysis</h3>
+
+    <p><strong>Confidence Score:</strong> {{ confidence_score }}%</p>
+
+    <p><strong>Confidence Level:</strong>
+        {% if confidence_level == "High Confidence" %}
+            <span style="color:green; font-weight:bold;">
+                {{ confidence_level }}
+            </span>
+        {% elif confidence_level == "Moderate Confidence" %}
+            <span style="color:orange; font-weight:bold;">
+                {{ confidence_level }}
+            </span>
+        {% else %}
+            <span style="color:red; font-weight:bold;">
+                {{ confidence_level }}
+            </span>
+        {% endif %}
+    </p>
+
+    <p style="font-size: 14px; color: #555;">
+        Higher confidence indicates more reliable forecast predictions.
+    </p>
+</div>
+
+<div class="card">
+    <h3>Forecast Quality Index</h3>
+
+    <p style="font-size: 22px; font-weight: bold;">
+        {{ quality_index }} / 100
+    </p>
+
+    <p>
+        <strong>Quality Level:</strong>
+        {% if quality_status == "Excellent Forecast Quality" %}
+            <span style="color:green; font-weight:bold;">
+                {{ quality_status }}
+            </span>
+        {% elif quality_status == "Good Forecast Quality" %}
+            <span style="color:#2563eb; font-weight:bold;">
+                {{ quality_status }}
+            </span>
+        {% elif quality_status == "Average Forecast Quality" %}
+            <span style="color:orange; font-weight:bold;">
+                {{ quality_status }}
+            </span>
+        {% else %}
+            <span style="color:red; font-weight:bold;">
+                {{ quality_status }}
+            </span>
+        {% endif %}
+    </p>
+
+    <p style="font-size: 14px; color: #555;">
+        This index combines model accuracy, stability, and confidence into a single quality score.
+    </p>
+</div>
+
+<div class="card">
+<h3>Forecast Risk Assessment</h3>
+
+<p style="font-size:22px;font-weight:bold;">
+Risk Score: {{ risk_score }} / 100
+</p>
+
+<p>
+<strong>Risk Level:</strong>
+
+{% if risk_level == "Low Risk" %}
+<span style="color:green;font-weight:bold;">
+{{ risk_level }}
+</span>
+
+{% elif risk_level == "Medium Risk" %}
+<span style="color:orange;font-weight:bold;">
+{{ risk_level }}
+</span>
+
+{% else %}
+<span style="color:red;font-weight:bold;">
+{{ risk_level }}
+</span>
+{% endif %}
+
+</p>
+
+<p style="font-size:14px;color:#555;">
+Lower risk indicates more reliable forecasts for inventory decisions.
+</p>
+
+</div>
+
+<div class="card">
+
+<h3>AI Forecast Recommendations</h3>
+
+<ul>
+{% for rec in recommendations %}
+<li style="margin-bottom:8px;">{{ rec }}</li>
+{% endfor %}
+</ul>
+
+<p style="font-size:14px;color:#555;">
+These recommendations help improve forecasting decisions and model performance.
+</p>
+
+</div>
+
+    <p style="margin-top:10px; font-size:14px; color:#555;">
+        Lower MAE and RMSE values indicate better predictive performance.
+    </p>
+
+</div>
+{% endif %}
+
 <!-- HISTORY TABLE -->
 <div class="card">
     <h3>Recent Forecast History</h3>
