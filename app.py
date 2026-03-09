@@ -139,9 +139,7 @@ def forecast():
     else:
         confidence_level = "Low Confidence"
 
-    # -------------------------
     # QUALITY INDEX
-    # -------------------------
 
     accuracy_score = max(0, 100 - (mae / 20))
     stability_score = max(0, 100 - (avg_volatility / 10))
