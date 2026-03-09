@@ -85,9 +85,7 @@ def forecast():
     else:
         model_status = "Needs Improvement"
 
-    # -------------------------
     # VOLATILITY CALCULATION
-    # -------------------------
 
     store_sales = {}
 
