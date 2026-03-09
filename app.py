@@ -127,7 +127,7 @@ def forecast():
 
     # -------------------------
     # CONFIDENCE SCORE
-    # -------------------------
+    
 
     confidence_score = max(0, 100 - (rmse / 20))
     confidence_score = round(confidence_score, 2)
