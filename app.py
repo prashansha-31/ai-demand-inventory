@@ -125,7 +125,6 @@ def forecast():
 
     avg_volatility = np.mean(volatility_values) if volatility_values else 0
 
-    # -------------------------
     # CONFIDENCE SCORE
     
 
