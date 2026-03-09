@@ -76,7 +76,6 @@ def forecast():
 
     # -------------------------
     # MODEL STATUS
-    # -------------------------
 
     if rmse < 500:
         model_status = "Excellent"
