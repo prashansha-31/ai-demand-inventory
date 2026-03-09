@@ -3,3 +3,4 @@ inventory.db
 inventory.db-journal
 __pycache__/
 *.pyc
+*.db
