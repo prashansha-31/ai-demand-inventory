@@ -1,436 +1,349 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Demand Forecasting Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f4f6f9;
-            margin: 40px;
-        }
+<title>AI Demand Forecast Dashboard</title>
 
-        h1 {
-            margin-bottom: 20px;
-        }
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        form input {
-            padding: 8px;
-            margin-right: 10px;
-            width: 150px;
-        }
+<style>
 
-        form button {
-            padding: 8px 15px;
-            background: #2563eb;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
+body{
+font-family: Arial;
+background:#f4f6f9;
+padding:30px;
+}
 
-        .card {
-            background: #ffffff;
-            padding: 20px;
-            margin-top: 25px;
-            border-radius: 10px;
-            box-shadow: 0px 6px 18px rgba(0,0,0,0.05);
-        }
+.card{
+background:white;
+padding:20px;
+margin-bottom:25px;
+border-radius:10px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
 
-        .kpi-container {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-        }
+.grid{
+display:grid;
+grid-template-columns: repeat(3,1fr);
+gap:20px;
+}
 
-        .kpi {
-            flex: 1;
-            text-align: center;
-        }
+.metric{
+font-size:26px;
+font-weight:bold;
+}
 
-        .kpi h2 {
-            margin: 10px 0;
-            font-size: 26px;
-            color: #2563eb;
-        }
+.card ul{
+line-height:1.8;
+font-size:16px;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
+.card li{
+margin-bottom:8px;
+}
 
-        table, th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
+ul{
+padding-left:20px;
+}
 
-        th {
-            background: #1f2937;
-            color: white;
-        }
+.chart-large{
+width:900px;
+height:450px;
+margin:auto;
+}
 
-        canvas {
-            margin-top: 20px;
-        }
-    </style>
+.chart-medium{
+width:700px;
+height:400px;
+margin:auto;
+}
+
+.chart-container{
+width:500px;
+height:400px;
+margin:auto;
+}
+
+</style>
+
 </head>
+
 <body>
 
-<h1>Demand Forecasting</h1>
+<h1>📊 AI Demand Forecast Dashboard</h1>
 
-<form method="POST">
-    <input type="number" name="store" placeholder="Store ID" required>
-    <input type="number" name="dept" placeholder="Department ID" required>
-    <button type="submit">Predict Demand</button>
-</form>
-
-{% if prediction %}
-<div class="card">
-    <h3>Forecast Result</h3>
-    <p><strong>Store:</strong> {{ selected_store }} |
-       <strong>Department:</strong> {{ selected_dept }}</p>
-    <p><strong>Predicted Weekly Sales:</strong>
-       ₹ {{ prediction | round(2) }}</p>
-</div>
-{% endif %}
-
-{% if prediction_history %}
-
-<!-- KPI SECTION -->
-<div class="kpi-container">
-
-    <div class="card kpi">
-        <h4>Latest Forecast</h4>
-<h2>
-    ₹ {{ prediction_history[-1].predicted_sales | round(2) }}
-    <span id="growthIndicator" style="font-size:16px;"></span>
-</h2>
-    </div>
-
-    <div class="card kpi">
-        <h4>Average Forecast</h4>
-        <h2>
-            ₹ {{
-                (prediction_history | map(attribute='predicted_sales') | list | sum
-                / prediction_history | length) | round(2)
-            }}
-        </h2>
-    </div>
-
-    <div class="card kpi">
-        <h4>Total Predictions</h4>
-        <h2>{{ prediction_history | length }}</h2>
-    </div>
-
-</div>
-
-{% if mae and rmse %}
-<div class="card">
-    <h3>Model Performance</h3>
-
-    <div style="display:flex; gap:30px; margin-top:15px;">
-
-        <div style="flex:1;">
-            <h4>MAE</h4>
-            <h2 style="color:#dc2626;">
-                {{ mae }}
-            </h2>
-        </div>
-
-        <div style="flex:1;">
-            <h4>RMSE</h4>
-            <h2 style="color:#ea580c;">
-                {{ rmse }}
-            </h2>
-        </div>
-
-        <div style="flex:1;">
-            <h4>Model Status</h4>
-            <h2 style="color:#2563eb;">
-                {{ model_status }}
-            </h2>
-        </div>
-
-    </div>
-
-    <div class="card">
-    <h3>Forecast Stability Analysis</h3>
-
-    <p><strong>Volatility Score:</strong> ₹ {{ volatility }}</p>
-
-    <p><strong>Stability Level:</strong>
-        {% if stability_status == "Very Stable" %}
-            <span style="color:green; font-weight:bold;">{{ stability_status }}</span>
-        {% elif stability_status == "Moderately Stable" %}
-            <span style="color:orange; font-weight:bold;">{{ stability_status }}</span>
-        {% else %}
-            <span style="color:red; font-weight:bold;">{{ stability_status }}</span>
-        {% endif %}
-    </p>
-
-    <p style="font-size: 14px; color: #555;">
-        Lower volatility indicates more consistent forecast behavior.
-    </p>
-</div>
 
 <div class="card">
-    <h3>Forecast Confidence Analysis</h3>
 
-    <p><strong>Confidence Score:</strong> {{ confidence_score }}%</p>
+<h2>Latest Forecast</h2>
 
-    <p><strong>Confidence Level:</strong>
-        {% if confidence_level == "High Confidence" %}
-            <span style="color:green; font-weight:bold;">
-                {{ confidence_level }}
-            </span>
-        {% elif confidence_level == "Moderate Confidence" %}
-            <span style="color:orange; font-weight:bold;">
-                {{ confidence_level }}
-            </span>
-        {% else %}
-            <span style="color:red; font-weight:bold;">
-                {{ confidence_level }}
-            </span>
-        {% endif %}
-    </p>
-
-    <p style="font-size: 14px; color: #555;">
-        Higher confidence indicates more reliable forecast predictions.
-    </p>
+{% if prediction_history and prediction_history|length > 0 %}
+<div class="metric">
+₹ {{ prediction_history[-1]["predicted_sales"] }}
 </div>
-
-<div class="card">
-    <h3>Forecast Quality Index</h3>
-
-    <p style="font-size: 22px; font-weight: bold;">
-        {{ quality_index }} / 100
-    </p>
-
-    <p>
-        <strong>Quality Level:</strong>
-        {% if quality_status == "Excellent Forecast Quality" %}
-            <span style="color:green; font-weight:bold;">
-                {{ quality_status }}
-            </span>
-        {% elif quality_status == "Good Forecast Quality" %}
-            <span style="color:#2563eb; font-weight:bold;">
-                {{ quality_status }}
-            </span>
-        {% elif quality_status == "Average Forecast Quality" %}
-            <span style="color:orange; font-weight:bold;">
-                {{ quality_status }}
-            </span>
-        {% else %}
-            <span style="color:red; font-weight:bold;">
-                {{ quality_status }}
-            </span>
-        {% endif %}
-    </p>
-
-    <p style="font-size: 14px; color: #555;">
-        This index combines model accuracy, stability, and confidence into a single quality score.
-    </p>
-</div>
-
-<div class="card">
-<h3>Forecast Risk Assessment</h3>
-
-<p style="font-size:22px;font-weight:bold;">
-Risk Score: {{ risk_score }} / 100
-</p>
-
-<p>
-<strong>Risk Level:</strong>
-
-{% if risk_level == "Low Risk" %}
-<span style="color:green;font-weight:bold;">
-{{ risk_level }}
-</span>
-
-{% elif risk_level == "Medium Risk" %}
-<span style="color:orange;font-weight:bold;">
-{{ risk_level }}
-</span>
-
 {% else %}
-<span style="color:red;font-weight:bold;">
-{{ risk_level }}
-</span>
+<div class="metric">
+₹ 0
+</div>
 {% endif %}
-
-</p>
-
-<p style="font-size:14px;color:#555;">
-Lower risk indicates more reliable forecasts for inventory decisions.
-</p>
 
 </div>
 
+
+
 <div class="card">
 
-<h3>AI Forecast Recommendations</h3>
+<h2>📈 Sales Forecast Trend</h2>
+
+<div class="chart-large">
+<canvas id="forecastChart"></canvas>
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>Model Performance</h2>
+
+<div class="grid">
+
+<div>
+<h3>MAE</h3>
+<div class="metric">{{ mae }}</div>
+</div>
+
+<div>
+<h3>RMSE</h3>
+<div class="metric">{{ rmse }}</div>
+</div>
+
+<div>
+<h3>Model Status</h3>
+<div class="metric">{{ model_status }}</div>
+</div>
+
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>Forecast Confidence Analysis</h2>
+
+<p><b>Confidence Score:</b> {{ confidence_score }}%</p>
+
+<p><b>Confidence Level:</b> {{ confidence_level }}</p>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>Forecast Quality Index</h2>
+
+<div class="metric">
+{{ quality_index }} / 100
+</div>
+
+<p><b>Quality Level:</b> {{ quality_level }}</p>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>Forecast Risk Assessment</h2>
+
+<div class="metric">
+Risk Score: {{ risk_score }} / 100
+</div>
+
+<p><b>Risk Level:</b> {{ risk_level }}</p>
+
+</div>
+
+
+<div class="card">
+    <h2>🚨 AI Demand Alert</h2>
+
+    <h3>{{ demand_alert }}</h3>
+    <p><strong>Recommended Action:</strong> {{ demand_action }}</p>
+
+    <p>This AI alert helps inventory managers adjust stock levels based on predicted demand.</p>
+</div>
+
+
+<div class="card">
+
+<h2>📊 Demand Intelligence Analytics</h2>
+
+
+<h3>🏬 Top Performing Stores</h3>
 
 <ul>
-{% for rec in recommendations %}
-<li style="margin-bottom:8px;">{{ rec }}</li>
+{% for store in top_stores %}
+<li>Store {{ store.store }} : ₹ {{ store.total_sales }}</li>
 {% endfor %}
 </ul>
 
-<p style="font-size:14px;color:#555;">
-These recommendations help improve forecasting decisions and model performance.
+
+
+<h3>📦 Top Departments</h3>
+
+<ul>
+{% for dept in top_departments %}
+<li>Dept {{ dept.dept }} : ₹ {{ dept.total_sales }}</li>
+{% endfor %}
+</ul>
+
+
+
+<h3>📉 High Volatility Stores</h3>
+
+<ul>
+{% for row in volatility_stores %}
+<li>Store {{ row.store }} : Volatility {{ row.volatility }}</li>
+{% endfor %}
+</ul>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>🤖 AI Demand Insights</h2>
+
+<ul>
+
+<li>📊 Store {{ top_stores[0].store }} generates the highest sales revenue.</li>
+
+<li>📦 Department {{ top_departments[0].dept }} contributes the most to overall sales.</li>
+
+<li>📉 Store {{ volatility_stores[0].store }} shows the highest demand volatility.</li>
+
+{% if risk_score < 30 %}
+<li>✅ Forecast risk is low — demand is stable.</li>
+{% elif risk_score < 60 %}
+<li>⚠ Forecast risk is moderate — monitor inventory carefully.</li>
+{% else %}
+<li>🚨 Forecast risk is high — demand fluctuations detected.</li>
+{% endif %}
+
+{% if confidence_score > 80 %}
+<li>📈 Forecast confidence is high — predictions are reliable.</li>
+{% else %}
+<li>⚠ Forecast confidence is moderate — interpret predictions cautiously.</li>
+{% endif %}
+
+</ul>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>🏬 Store Performance</h2>
+
+<div class="chart-medium">
+<canvas id="storeChart"></canvas>
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>📦 Department Sales Distribution</h2>
+
+<div class="chart-container">
+<canvas id="deptChart"></canvas>
+</div>
+
+</div>
+
+
+
+<p style="margin-top:40px;color:#666;">
+Lower MAE and RMSE values indicate better predictive performance.
 </p>
 
-</div>
 
-    <p style="margin-top:10px; font-size:14px; color:#555;">
-        Lower MAE and RMSE values indicate better predictive performance.
-    </p>
-
-</div>
-{% endif %}
-
-<!-- HISTORY TABLE -->
-<div class="card">
-    <h3>Recent Forecast History</h3>
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Store</th>
-            <th>Dept</th>
-            <th>Predicted Sales</th>
-            <th>Date</th>
-        </tr>
-        {% for row in prediction_history %}
-        <tr>
-            <td>{{ row.id }}</td>
-            <td>{{ row.store }}</td>
-            <td>{{ row.dept }}</td>
-            <td>₹ {{ row.predicted_sales | round(2) }}</td>
-            <td>{{ row.prediction_date }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-
-<!-- CHART SECTION -->
-<div class="card">
-    <h3>Forecast Trend</h3>
-    <canvas id="forecastChart"></canvas>
-</div>
-
-<!-- SAFE JSON DATA (NO RED LINES) -->
-<script type="application/json" id="forecastData">
-{{ prediction_history | tojson }}
-</script>
-
-<script type="application/json" id="forecastData">
-{{ prediction_history | tojson }}
-</script>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
 
-    const rawDataElement = document.getElementById("forecastData");
-    if (!rawDataElement) return;
 
-    let forecastData = JSON.parse(rawDataElement.textContent);
+const forecastLabels = {{ prediction_history | map(attribute='prediction_date') | list | tojson }};
+const forecastData = {{ prediction_history | map(attribute='predicted_sales') | list | tojson }};
 
-    if (!forecastData || forecastData.length === 0) return;
 
-    // ✅ Sort data from oldest → newest
-    forecastData.sort((a, b) => new Date(a.prediction_date) - new Date(b.prediction_date));
 
-    const labels = forecastData.map(item => {
-    const rawDate = new Date(item.prediction_date);
-    return rawDate.toLocaleTimeString('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
-});
-
-    const sales = forecastData.map(item => item.predicted_sales);
-// Calculate growth %
-let growthPercent = 0;
-if (sales.length > 1) {
-    const latest = sales[sales.length - 1];
-    const previous = sales[sales.length - 2];
-    growthPercent = ((latest - previous) / previous) * 100;
+new Chart(document.getElementById("forecastChart"), {
+type: "line",
+data: {
+labels: forecastLabels,
+datasets: [{
+label: "Predicted Sales",
+data: forecastData,
+borderColor: "blue",
+backgroundColor: "rgba(0,0,255,0.1)",
+tension:0.3
+}]
 }
+})
 
-// Update growth indicator
-const growthElement = document.getElementById("growthIndicator");
 
-if (growthElement) {
-    if (growthPercent > 0) {
-        growthElement.innerHTML =
-            " ▲ " + growthPercent.toFixed(2) + "%";
-        growthElement.style.color = "green";
-    } else if (growthPercent < 0) {
-        growthElement.innerHTML =
-            " ▼ " + growthPercent.toFixed(2) + "%";
-        growthElement.style.color = "red";
-    } else {
-        growthElement.innerHTML = " 0%";
-        growthElement.style.color = "gray";
-    }
+
+const storeLabels = {{ top_stores | map(attribute='store') | list | tojson }};
+const storeSales = {{ top_stores | map(attribute='total_sales') | list | tojson }};
+
+
+new Chart(document.getElementById("storeChart"), {
+type: "bar",
+data: {
+labels: storeLabels,
+datasets: [{
+label: "Sales",
+data: storeSales,
+backgroundColor: "green"
+}]
 }
+})
 
-    const ctx = document.getElementById("forecastChart").getContext("2d");
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, "rgba(37, 99, 235, 0.4)");
-    gradient.addColorStop(1, "rgba(37, 99, 235, 0)");
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: "Predicted Sales",
-                data: sales,
-                borderColor: "#2563eb",
-                backgroundColor: gradient,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 6,
-                pointBackgroundColor: "#ffffff",
-                pointBorderWidth: 3,
-                borderWidth: 3
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    labels: {
-                        font: { size: 14 }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return "₹ " + context.raw.toLocaleString();
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    ticks: {
-                        callback: value => "₹ " + value
-                    }
-                }
-            }
-        }
-    });
+const deptLabels = {{ top_departments | map(attribute='dept') | list | tojson }};
+const deptSales = {{ top_departments | map(attribute='total_sales') | list | tojson }};
 
-});
+
+new Chart(document.getElementById("deptChart"), {
+type: "pie",
+data: {
+labels: deptLabels,
+datasets: [{
+data: deptSales,
+backgroundColor:[
+"#4CAF50",
+"#2196F3",
+"#FFC107",
+"#FF5722",
+"#9C27B0"
+]
+}]
+}
+})
+
+
 </script>
 
-{% endif %}
 
 </body>
 </html>
