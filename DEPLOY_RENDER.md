@@ -14,6 +14,7 @@ Build uses **`Dockerfile`**: Node builds `frontend/`, Python installs deps, `ini
 ## Environment
 
 - **No `VITE_API_URL` required** for single deploy: the production build calls `/api/...` on the same host.
+- Set `PORT` environment variable to the port Render assigns (default handled by uvicorn).
 
 ## Local “single service” check
 
@@ -31,3 +32,13 @@ Open `http://127.0.0.1:8000/` for the UI and `http://127.0.0.1:8000/docs` for th
 ## Large model file
 
 If `models/demand_model_advanced.pkl` is too large for Git, use [Git LFS](https://git-lfs.com/) or another artifact strategy before the Docker build can succeed on Render.
+
+## Additional Notes
+
+- Monitor the build logs for any dependency issues.
+
+## Troubleshooting
+
+- If deployment fails, check for large model files and consider using Git LFS.
+- Verify that all required environment variables are set in Render.
+- Test locally using the provided commands before deploying.
