@@ -1,386 +1,112 @@
-# 📊 AI Demand Forecasting & Inventory Intelligence System
+# ⚡ NeuralStock: AI Demand & Inventory Intelligence
 
-An **AI-powered demand forecasting and inventory intelligence dashboard** built using **Flask, Python, and Machine Learning**.
+A stunning, AI-powered demand forecasting and inventory intelligence dashboard built using **Flask, Python, Machine Learning (Random Forest)**, and a **modern Glassmorphism UI**.
 
-This system predicts product demand and provides **advanced analytics including stability analysis, confidence scoring, quality index, risk assessment, and AI recommendations** to support better inventory decisions.
-
----
-
-# 🚀 Project Overview
-
-Retail businesses face major challenges such as:
-
-- 📦 Overstocking
-- ❌ Stockouts
-- 📉 Poor demand estimation
-
-This project solves those problems using **AI-driven forecasting and analytics dashboards**.
-
-The system predicts demand and evaluates **forecast reliability**, helping businesses make **data-driven inventory decisions**.
+NeuralStock predicts product demand with high accuracy and provides advanced analytics including stability analysis, confidence scoring, quality indexing, risk assessment, and automated inventory policy generation (EOQ & Safety Stock).
 
 ---
 
-# ✨ Key Features
+## 🚀 The Solution
 
-## 🔮 Demand Forecasting
-Predicts weekly demand based on:
-
-- Store ID
-- Department ID
-
----
-
-## 📊 Interactive Dashboard
-
-The dashboard includes:
-
-- Forecast trend visualization
-- Forecast history tracking
-- Performance analytics
-- Risk evaluation
+Retail businesses often face the expensive challenges of **overstocking**, **stockouts**, and **poor demand estimation**. NeuralStock solves these problems by providing:
+1. **Machine Learning Forecasting:** A Random Forest model trained on 421,500+ historical records, utilizing seasonally-aware lag features.
+2. **Actionable Inventory Math:** Translating pure demand predictions into real-world purchasing policies (Economic Order Quantity & Reorder Points).
+3. **Beautiful Analytics:** A highly visual, neon-themed dashboard designed to give executives and store managers immediate clarity.
 
 ---
 
-## 📈 Forecast Trend Visualization
+## ✨ Core Features
 
-Interactive **Chart.js line graph** showing demand trends over time.
+### 🔮 AI Demand Predictor (`/predict`)
+- Enter Store ID, Department ID, Year, Month, and Week.
+- The backend automatically queries the SQLite database to build advanced rolling features (`sales_lag1`, `sales_lag4`, `rolling_mean`, `rolling_std`).
+- Instantly returns the predicted weekly sales in a glowing, interactive UI.
 
-Helps identify:
+### 📊 Forecast Dashboard (`/forecast`)
+- **Chart.js Visualizations**: Line and bar graphs mapping predicted sales across time, stores, and departments.
+- **Model Confidence Score**: Generates a dynamic confidence score (~75-95%) based on Root Mean Square Error (RMSE).
+- **Demand Volatility Analysis**: Evaluates stability using standard deviation.
+- **Quality & Risk Index**: A combined metric evaluating the operational risk of using forecasts for inventory planning.
 
-- Rising demand
-- Demand drops
-- Seasonal patterns
+### 📋 Global Sales Dashboard (`/dashboard`)
+- A filterable, interactive data table to explore the entire 421,570-row historical sales database.
+- View total sales, average weekly sales, and active department counts.
 
----
-
-## 📋 Forecast History Tracking
-
-All predictions are stored in **SQLite database**.
-
-Allows:
-
-- Historical analysis
-- Model evaluation
-- Trend monitoring
-
----
-
-# 🧠 Advanced Forecast Analytics
-
-## 📉 Model Performance Metrics
-
-The system evaluates prediction accuracy using:
-
-### MAE (Mean Absolute Error)
-
-Measures average error in predictions.
-
-Lower MAE = Better model accuracy
-
-### RMSE (Root Mean Square Error)
-
-Penalizes large prediction errors.
-
-Lower RMSE = More reliable predictions
+### 📦 Inventory Optimizer (`/inventory`)
+- Instantly calculate **Economic Order Quantity (EOQ)**.
+- Calculate **Safety Stock** and **Reorder Points** using an AI-driven service level of 95% (z-score 1.65).
 
 ---
 
-## 📊 Forecast Stability Analysis
+## 🎨 UI / UX Design
 
-Measures **volatility in predicted demand**.
-
-Calculated using **standard deviation**.
-
-Stability levels:
-
-- 🟢 Highly Stable
-- 🟡 Moderately Stable
-- 🔴 Unstable
-
-Higher volatility indicates unstable demand patterns.
+The frontend was completely overhauled to feature a sophisticated, AI-themed dark aesthetic:
+- **Neon Glow Effects:** Cyan and Purple linear gradients with CSS drop-shadows.
+- **Glassmorphism:** Semi-transparent frosted glass cards (`rgba(0, 245, 255, 0.04)`) with backdrop filters.
+- **Animated Backgrounds:** Floating blurred CSS orbs and dynamic scanline effects.
+- **Micro-interactions:** Smooth hover states, glowing borders, and pulsating status indicators.
 
 ---
 
-## 🎯 Forecast Confidence Analysis
+## 🛠 Technology Stack
 
-Generates a **confidence score based on model error**.
-
-Confidence levels:
-
-- 🟢 High Confidence
-- 🟡 Moderate Confidence
-- 🔴 Low Confidence
-
-Low confidence suggests unreliable predictions.
+- **Backend:** Python 3.12, Flask, SQLite3, Gunicorn
+- **Machine Learning:** Scikit-Learn (Random Forest), Pandas, NumPy, Pickle
+- **Frontend:** HTML5, Vanilla CSS3, Chart.js, Google Fonts (Inter & JetBrains Mono)
+- **Deployment:** Docker, Render
 
 ---
 
-## 🏆 Forecast Quality Index
+## ⚙️ Installation & Local Setup
 
-A combined metric evaluating:
-
-- Model accuracy
-- Forecast stability
-- Confidence score
-
-Range:
-
-```
-0 – 100
-```
-
-Quality Levels:
-
-- 🟢 Excellent Forecast Quality
-- 🟡 Good Forecast Quality
-- 🟠 Average Forecast Quality
-- 🔴 Poor Forecast Quality
-
-Displayed with a **visual quality meter** in the dashboard.
-
----
-
-## ⚠️ Forecast Risk Assessment
-
-Evaluates the **operational risk of using forecasts** for inventory planning.
-
-Risk score combines:
-
-- Forecast volatility
-- Quality index
-- Confidence score
-
-Risk Levels:
-
-- 🟢 Low Risk
-- 🟡 Medium Risk
-- 🔴 High Risk
-
-Lower risk indicates **more reliable forecasts**.
-
----
-
-## 🤖 AI Forecast Recommendations
-
-The system generates automatic recommendations such as:
-
-- High volatility detected in forecasts
-- Model accuracy needs improvement
-- Forecast suitable for short-term planning
-- Risk level warning for inventory decisions
-
-This makes the system a **decision-support tool for inventory management**.
-
----
-
-# 🛠 Technology Stack
-
-## 💻 Backend
-- Python
-- Flask
-
-## 🎨 Frontend
-- HTML
-- CSS
-- Chart.js
-
-## 🗄 Database
-- SQLite
-
-## 📊 Data Processing
-- Pandas
-- NumPy
-
----
-
-# 📦 Project Structure
-
-```
-AI-DEMAND-INVENTORY/
-│
-├── 📁 data
-│   ├── 📊 sales.csv
-│   └── 📊 clean_sales.csv
-│
-├── 📁 models
-│   ├── 🧠 demand_model.pkl
-│   ├── 📈 forecast_model.py
-│   └── 🔍 eda_analysis.py
-│
-├── 📁 templates
-│   ├── 🖥 index.html
-│   ├── 📊 dashboard.html
-│   ├── 🔮 forecast.html
-│   └── 📦 inventory.html
-│
-├── 📁 static
-│   └── 🎨 styles.css
-│
-├── 🐍 app.py
-├── 🗄 forecast.db
-├── 🗄 inventory.db
-├── 📦 requirements.txt
-├── 📄 README.md
-└── 🚫 .gitignore
-```
-
----
-
-# ⚙️ Installation & Setup
-
-## 1️⃣ Clone Repository
-
-```
-git clone https://github.com/yourusername/ai-demand-inventory.git
-```
-
----
-
-## 2️⃣ Navigate to Project
-
-```
+### 1️⃣ Clone Repository
+```bash
+git clone https://github.com/prashansha-31/ai-demand-inventory.git
 cd ai-demand-inventory
 ```
 
----
-
-## 3️⃣ Create Virtual Environment
-
-```
+### 2️⃣ Create Virtual Environment
+```bash
 python -m venv venv
-```
-
-Activate environment
-
-### Windows
-
-```
+# Windows:
 venv\Scripts\activate
-```
-
-### Mac/Linux
-
-```
+# Mac/Linux:
 source venv/bin/activate
 ```
 
----
-
-## 4️⃣ Install Dependencies
-
-```
+### 3️⃣ Install Dependencies
+```bash
 pip install -r requirements.txt
 ```
 
----
-
-## 5️⃣ Run Application
-
+### 4️⃣ Initialize Database
+Run the setup script to create the SQLite DB and seed it with historical sales data.
+```bash
+python init_db.py
 ```
+
+### 5️⃣ Run the App
+```bash
 python app.py
 ```
-
-Open browser:
-
-```
-http://127.0.0.1:5000
-```
+Open your browser to `http://127.0.0.1:5000`
 
 ---
 
-# 📊 Dashboard Modules
+## 🌍 Deployment (Render)
 
-The dashboard provides:
+This project is fully Dockerized and ready for production deployment on Render.
 
-- 📈 Forecast Trend Chart
-- 📋 Forecast History Table
-- 📊 KPI Summary Cards
-- 📉 Model Performance Metrics
-- 📊 Stability Analysis
-- 🎯 Confidence Score
-- 🏆 Forecast Quality Index
-- ⚠️ Risk Assessment
-- 🤖 AI Recommendations
+1. Create a new **Web Service** on Render.
+2. Select **Docker** as the environment.
+3. Connect this GitHub repository.
+4. Leave the Root Directory blank.
+5. Add an Environment Variable: `PORT` = `8000`.
+6. Click **Deploy**. Render will automatically install dependencies, build the SQLite database via `init_db.py`, and start the app using Gunicorn.
 
 ---
 
-# 📊 Example Output
-
-### Forecast Quality Index
-
-```
-53.53 / 100
-```
-
-Quality Level
-
-```
-Average Forecast Quality
-```
-
----
-
-### Risk Assessment
-
-Risk Score
-
-```
-50.21 / 100
-```
-
-Risk Level
-
-```
-Medium Risk
-```
-
----
-
-### AI Recommendations
-
-- High volatility detected in forecasts  
-- Forecast suitable mainly for short-term planning
-
----
-
-# 🔮 Future Improvements 
-
-Planned enhancements:
-
-- 📊 Department demand ranking
-- 🏬 Store performance comparison
-- 📈 Demand volatility ranking
-- 🌡 Forecast heatmap visualization
-- 🤖 Automated model retraining alerts
-- 📉 Advanced ML forecasting models
-
----
-
-# 🎯 Learning Outcomes
-
-This project demonstrates real-world skills in:
-
-- Machine Learning forecasting
-- Business analytics dashboards
-- Decision support systems
-- Data visualization
-- Supply chain analytics
-
----
-
-# ✅ Conclusion
-
-The **AI Demand Forecasting & Inventory Intelligence System** demonstrates how machine learning and data analytics can be used to improve inventory planning and demand prediction.
-
-This project combines **forecasting models, data visualization, and analytics metrics** to provide a comprehensive decision-support dashboard. By analyzing model performance, forecast stability, confidence levels, quality index, and risk assessment, the system helps users better understand the reliability of predictions.
-
-The dashboard transforms raw predictions into **actionable insights**, enabling smarter inventory decisions and reducing the risks of overstocking or stockouts.
-
-Overall, this project highlights the practical application of:
-
-- 📊 Data analytics
-- 🤖 Machine learning forecasting
-- 📈 Business intelligence dashboards
-- 🧠 Decision-support systems
-
-It serves as a strong example of how **AI-driven insights can enhance supply chain and inventory management systems**.
+## 📈 Machine Learning Details
+The core forecasting engine uses a **Random Forest Regressor**.
+- **Features Used:** `Store`, `Dept`, `year`, `month`, `week`, `day`, `dayofweek`, `quarter`, `store_dept`, `month_squared`, `sales_lag1`, `sales_lag4`, `sales_rolling_mean`, `sales_rolling_std`
+- **Inference Strategy:** When making a new prediction, the system looks up the most relevant recent historical data for that exact Store and Department to populate the lag and rolling mean features dynamically.
