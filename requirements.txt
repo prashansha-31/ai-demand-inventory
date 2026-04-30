@@ -9,3 +9,4 @@ xgboost
 joblib
 flask
 gunicorn
+# Additional dependencies for deployment
