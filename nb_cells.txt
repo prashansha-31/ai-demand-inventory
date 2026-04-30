@@ -1,0 +1,388 @@
+﻿--- Cell 0 ---
+import pandas as pd
+import sqlite3
+import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings('ignore')
+
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score, KFold
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, VotingRegressor, StackingRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.neural_network import MLPRegressor
+
+try:
+    import xgboost as xgb
+    XGBOOST_AVAILABLE = True
+except ImportError:
+    XGBOOST_AVAILABLE = False
+    print("ΓÜá∩╕Å XGBoost not installed. Install with: pip install xgboost")
+
+try:
+    import lightgbm as lgb
+    LIGHTGBM_AVAILABLE = True
+except ImportError:
+    LIGHTGBM_AVAILABLE = False
+    print("ΓÜá∩╕Å LightGBM not installed. Install with: pip install lightgbm")
+
+print("Γ£à All available libraries imported successfully.")
+
+--- Cell 1 ---
+conn = sqlite3.connect("../forecast.db")
+df = pd.read_sql_query("SELECT * FROM sales", conn)
+conn.close()
+
+df["date"] = pd.to_datetime(df["date"])
+df["year"]  = df["date"].dt.year
+df["month"] = df["date"].dt.month
+df["week"]  = df["date"].dt.isocalendar().week.astype(int)
+df["day"]   = df["date"].dt.day
+df["dayofweek"] = df["date"].dt.dayofweek
+df["quarter"] = df["date"].dt.quarter
+
+df["store_dept"] = df["store"] * df["dept"]
+df["month_squared"] = df["month"] ** 2
+
+df = df.sort_values('date').reset_index(drop=True)
+df["sales_lag1"] = df.groupby(["store", "dept"])["weekly_sales"].shift(1)
+df["sales_lag4"] = df.groupby(["store", "dept"])["weekly_sales"].shift(4)
+df["sales_rolling_mean"] = df.groupby(["store", "dept"])["weekly_sales"].rolling(window=4).mean().reset_index(drop=True)
+df["sales_rolling_std"] = df.groupby(["store", "dept"])["weekly_sales"].rolling(window=4).std().reset_index(drop=True)
+
+df = df.bfill().ffill()
+
+FEATURES = ["store", "dept", "year", "month", "week", "day", "dayofweek", "quarter", 
+            "store_dept", "month_squared", "sales_lag1", "sales_lag4", "sales_rolling_mean", "sales_rolling_std"]
+TARGET   = "weekly_sales"
+
+X = df[FEATURES].copy()
+y = df[TARGET].copy()
+
+valid_idx = ~(X.isna().any(axis=1) | y.isna())
+X = X[valid_idx]
+y = y[valid_idx]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+print(f"Γ£à Data prepared with {len(FEATURES)} features.")
+print(f"Training samples: {len(X_train):,}, Test samples: {len(X_test):,}")
+print(f"Features: {FEATURES}")
+
+--- Cell 2 ---
+models = {
+    "Linear Regression": LinearRegression(),
+    "Ridge Regression": Ridge(alpha=1.0),
+    "Lasso Regression": Lasso(alpha=0.1),
+    "ElasticNet": ElasticNet(alpha=0.1, l1_ratio=0.5),
+    "Decision Tree": DecisionTreeRegressor(max_depth=10, random_state=42),
+    "Random Forest": RandomForestRegressor(n_estimators=100, max_depth=15, random_state=42, n_jobs=-1),
+    "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42),
+    "AdaBoost": AdaBoostRegressor(n_estimators=100, learning_rate=0.1, random_state=42),
+}
+
+if XGBOOST_AVAILABLE:
+    models["XGBoost"] = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42, n_jobs=-1)
+
+if LIGHTGBM_AVAILABLE:
+    models["LightGBM"] = lgb.LGBMRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42, n_jobs=-1)
+
+results = {}
+
+for name, model in models.items():
+    print(f"≡ƒöä Training {name}...")
+    
+    model.fit(X_train, y_train)
+    y_pred_train = model.predict(X_train)
+    y_pred_test = model.predict(X_test)
+    
+    mae_train = mean_absolute_error(y_train, y_pred_train)
+    mae_test = mean_absolute_error(y_test, y_pred_test)
+    rmse_train = np.sqrt(mean_squared_error(y_train, y_pred_train))
+    rmse_test = np.sqrt(mean_squared_error(y_test, y_pred_test))
+    r2_train = r2_score(y_train, y_pred_train)
+    r2_test = r2_score(y_test, y_pred_test)
+    
+    cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='r2', n_jobs=-1)
+    
+    results[name] = {
+        "model": model,
+        "Train MAE": mae_train,
+        "Test MAE": mae_test,
+        "Train RMSE": rmse_train,
+        "Test RMSE": rmse_test,
+        "Train R┬▓": r2_train,
+        "Test R┬▓": r2_test,
+        "CV R┬▓ Mean": cv_scores.mean(),
+        "CV R┬▓ Std": cv_scores.std()
+    }
+    print(f"Γ£à {name} - Test R┬▓: {r2_test:.4f}, Test MAE: {mae_test:,.0f}")
+
+results_df = pd.DataFrame(results).T.drop(columns=["model"])
+print("\n" + "="*100)
+print("≡ƒôè Model Comparison (sorted by Test R┬▓):")
+print("="*100)
+display(results_df.sort_values('Test R┬▓', ascending=False))
+
+--- Cell 3 ---
+for name in results:
+    train_r2 = results[name].get('Train R2', results[name].get('Train R┬▓', None))
+    test_r2 = results[name].get('Test R2', results[name].get('Test R┬▓', None))
+
+    if train_r2 is None or test_r2 is None:
+        print(f"{name}: Metrics unavailable (missing R┬▓/R2)")
+        continue
+
+    status = "Good Fit"
+    try:
+        if train_r2 > 0.9 and test_r2 < 0.7:
+            status = "ΓÜá∩╕Å Overfitting"
+        elif train_r2 < 0.5 and test_r2 < 0.5:
+            status = "ΓÜá∩╕Å Underfitting"
+    except Exception:
+        status = "Metrics error"
+
+    print(f"{name}: {status} (Train R┬▓={train_r2:.2f}, Test R┬▓={test_r2:.2f})")
+
+--- Cell 4 ---
+base_models = [
+    ('rf', RandomForestRegressor(n_estimators=20, max_depth=5, random_state=42, n_jobs=-1)),
+    ('gb', GradientBoostingRegressor(n_estimators=20, learning_rate=0.1, max_depth=3, random_state=42)),
+    ('ada', AdaBoostRegressor(n_estimators=20, learning_rate=0.1, random_state=42)),
+]
+
+if XGBOOST_AVAILABLE:
+    base_models.append(('xgb', xgb.XGBRegressor(n_estimators=20, learning_rate=0.1, max_depth=3, random_state=42, n_jobs=-1)))
+
+if LIGHTGBM_AVAILABLE:
+    base_models.append(('lgb', lgb.LGBMRegressor(n_estimators=20, learning_rate=0.1, max_depth=3, random_state=42, n_jobs=-1)))
+
+print("≡ƒöä Training Voting Ensemble...")
+voting_model = VotingRegressor(estimators=base_models)
+voting_model.fit(X_train, y_train)
+y_pred_voting = voting_model.predict(X_test)
+voting_r2 = r2_score(y_test, y_pred_voting)
+voting_mae = mean_absolute_error(y_test, y_pred_voting)
+print(f"Γ£à Voting Ensemble - Test R┬▓: {voting_r2:.4f}, Test MAE: {voting_mae:,.0f}")
+
+meta_learner = Ridge(alpha=1.0)
+
+print("≡ƒöä Training Stacking Ensemble...")
+stacking_model = StackingRegressor(
+    estimators=base_models,
+    final_estimator=meta_learner,
+    cv=3
+)
+stacking_model.fit(X_train, y_train)
+y_pred_stacking = stacking_model.predict(X_test)
+stacking_r2 = r2_score(y_test, y_pred_stacking)
+stacking_mae = mean_absolute_error(y_test, y_pred_stacking)
+print(f"Γ£à Stacking Ensemble - Test R┬▓: {stacking_r2:.4f}, Test MAE: {stacking_mae:,.0f}")
+
+results['Voting Ensemble'] = {
+    'model': voting_model,
+    'Train MAE': mean_absolute_error(y_train, voting_model.predict(X_train)),
+    'Test MAE': voting_mae,
+    'Train RMSE': np.sqrt(mean_squared_error(y_train, voting_model.predict(X_train))),
+    'Test RMSE': np.sqrt(mean_squared_error(y_test, y_pred_voting)),
+    'Train R┬▓': r2_score(y_train, voting_model.predict(X_train)),
+    'Test R┬▓': voting_r2,
+    'CV R┬▓ Mean': 0.0,
+    'CV R┬▓ Std': 0.0
+}
+
+results['Stacking Ensemble'] = {
+    'model': stacking_model,
+    'Train MAE': mean_absolute_error(y_train, stacking_model.predict(X_train)),
+    'Test MAE': stacking_mae,
+    'Train RMSE': np.sqrt(mean_squared_error(y_train, stacking_model.predict(X_train))),
+    'Test RMSE': np.sqrt(mean_squared_error(y_test, y_pred_stacking)),
+    'Train R┬▓': r2_score(y_train, stacking_model.predict(X_train)),
+    'Test R┬▓': stacking_r2,
+    'CV R┬▓ Mean': 0.0,
+    'CV R┬▓ Std': 0.0
+}
+
+print("\n" + "="*100)
+print("≡ƒôè Updated Model Comparison (All Models + Ensembles):")
+print("="*100)
+results_df = pd.DataFrame(results).T.drop(columns=["model"])
+display(results_df.sort_values('Test R┬▓', ascending=False))
+
+--- Cell 5 ---
+!
+
+--- Cell 6 ---
+best_model_name = results_df.sort_values('Test R┬▓', ascending=False).index[0]
+best_model_obj = results[best_model_name]['model']
+
+print(f"≡ƒÄ» Selected Best Model: {best_model_name}")
+print(f"Current Test R┬▓: {results[best_model_name]['Test R┬▓']:.4f}")
+
+if best_model_name == "Gradient Boosting":
+    print("\n≡ƒöä Tuning Gradient Boosting Regressor (Ultra fast)...")
+    param_grid = {
+        'n_estimators': [50],
+        'learning_rate': [0.1],
+        'max_depth': [5]
+    }
+    gb = GradientBoostingRegressor(random_state=42)
+    grid_search = GridSearchCV(estimator=gb, param_grid=param_grid, cv=2, scoring='r2', n_jobs=-1, verbose=0)
+    grid_search.fit(X_train, y_train)
+    best_model = grid_search.best_estimator_
+    
+elif best_model_name == "Random Forest":
+    print("\n≡ƒöä Tuning Random Forest Regressor (Ultra fast)...")
+    param_grid = {
+        'n_estimators': [50],
+        'max_depth': [15],
+    }
+    rf = RandomForestRegressor(random_state=42, n_jobs=-1)
+    grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=2, scoring='r2', n_jobs=-1, verbose=0)
+    grid_search.fit(X_train, y_train)
+    best_model = grid_search.best_estimator_
+    
+elif best_model_name == "XGBoost":
+    print("\n≡ƒöä Tuning XGBoost Regressor (Ultra fast)...")
+    param_grid = {
+        'n_estimators': [50],
+        'learning_rate': [0.1],
+        'max_depth': [5]
+    }
+    xgb_model = xgb.XGBRegressor(random_state=42, n_jobs=-1)
+    grid_search = GridSearchCV(estimator=xgb_model, param_grid=param_grid, cv=2, scoring='r2', n_jobs=-1, verbose=0)
+    grid_search.fit(X_train, y_train)
+    best_model = grid_search.best_estimator_
+    
+else:
+    print(f"\n≡ƒöä Using pre-trained {best_model_name}...")
+    best_model = best_model_obj
+
+y_pred_tuned = best_model.predict(X_test)
+tuned_r2 = r2_score(y_test, y_pred_tuned)
+tuned_mae = mean_absolute_error(y_test, y_pred_tuned)
+tuned_rmse = np.sqrt(mean_squared_error(y_test, y_pred_tuned))
+
+print(f"\nΓ£à Best Model Performance:")
+print(f"   Test R┬▓: {tuned_r2:.4f}")
+print(f"   Test MAE: {tuned_mae:,.2f}")
+print(f"   Test RMSE: {tuned_rmse:,.2f}")
+
+if best_model_name in ["Gradient Boosting", "Random Forest", "XGBoost", "LightGBM"]:
+    print(f"   Best Parameters: {grid_search.best_params_}")
+
+--- Cell 7 ---
+comparison_df = pd.DataFrame({
+    'Actual Sales': y_test.values,
+    'Predicted Sales': y_pred_tuned
+})
+comparison_df['Error'] = comparison_df['Actual Sales'] - comparison_df['Predicted Sales']
+
+denominator = (np.abs(comparison_df['Actual Sales']) + np.abs(comparison_df['Predicted Sales'])) / 2.0
+comparison_df['Error % (sMAPE)'] = np.where(
+    denominator == 0, 
+    0.0, 
+    (np.abs(comparison_df['Error']) / denominator * 100)
+).round(2)
+
+print("≡ƒöì Actual vs Predicted Sales (Random Sample of 10):")
+display(comparison_df.sample(10, random_state=42).round(2))
+
+fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+
+axes[0, 0].plot(comparison_df['Actual Sales'][:100], label='Actual Sales', marker='o', linewidth=2, markersize=4)
+axes[0, 0].plot(comparison_df['Predicted Sales'][:100], label='Predicted Sales', marker='x', linewidth=2, markersize=4)
+axes[0, 0].set_title("Actual vs Predicted Weekly Sales (First 100 Samples)", fontsize=12, fontweight='bold')
+axes[0, 0].set_xlabel("Sample Index")
+axes[0, 0].set_ylabel("Weekly Sales")
+axes[0, 0].legend()
+axes[0, 0].grid(True, alpha=0.3)
+
+axes[0, 1].scatter(comparison_df['Actual Sales'], comparison_df['Predicted Sales'], alpha=0.5, s=10)
+axes[0, 1].plot([comparison_df['Actual Sales'].min(), comparison_df['Actual Sales'].max()], 
+                [comparison_df['Actual Sales'].min(), comparison_df['Actual Sales'].max()], 
+                'r--', lw=2, label='Perfect Prediction')
+axes[0, 1].set_title("Prediction Accuracy (Actual vs Predicted)", fontsize=12, fontweight='bold')
+axes[0, 1].set_xlabel("Actual Sales")
+axes[0, 1].set_ylabel("Predicted Sales")
+axes[0, 1].legend()
+axes[0, 1].grid(True, alpha=0.3)
+
+axes[1, 0].hist(comparison_df['Error'], bins=50, edgecolor='black', alpha=0.7)
+axes[1, 0].axvline(comparison_df['Error'].mean(), color='r', linestyle='--', linewidth=2, label=f"Mean Error: {comparison_df['Error'].mean():,.0f}")
+axes[1, 0].set_title("Distribution of Prediction Errors", fontsize=12, fontweight='bold')
+axes[1, 0].set_xlabel("Prediction Error")
+axes[1, 0].set_ylabel("Frequency")
+axes[1, 0].legend()
+axes[1, 0].grid(True, alpha=0.3)
+
+top_models = results_df.sort_values('Test R┬▓', ascending=False).head(10)
+axes[1, 1].barh(range(len(top_models)), top_models['Test R┬▓'], color='skyblue', edgecolor='black')
+axes[1, 1].set_yticks(range(len(top_models)))
+axes[1, 1].set_yticklabels(top_models.index)
+axes[1, 1].set_xlabel("Test R┬▓ Score")
+axes[1, 1].set_title("Top 10 Models Comparison", fontsize=12, fontweight='bold')
+axes[1, 1].grid(True, alpha=0.3, axis='x')
+
+plt.tight_layout()
+plt.show()
+
+print("\n" + "="*100)
+print("≡ƒôè FINAL MODEL METRICS:")
+print("="*100)
+print(f"Mean Absolute Error (MAE): {comparison_df['Error'].abs().mean():,.2f}")
+print(f"Mean Squared Error (MSE): {(comparison_df['Error'] ** 2).mean():,.2f}")
+print(f"Root Mean Squared Error (RMSE): {np.sqrt((comparison_df['Error'] ** 2).mean()):,.2f}")
+
+overall_smape = comparison_df['Error % (sMAPE)'].mean()
+print(f"Symmetric Mean Absolute Percentage Error (sMAPE): {overall_smape:.2f}% (bounded 0-200%)")
+
+wmape = (comparison_df['Error'].abs().sum() / comparison_df['Actual Sales'].abs().sum()) * 100
+print(f"Weighted Mean Absolute Percentage Error (WMAPE): {wmape:.2f}% (volume-weighted overall error)")
+
+print(f"R┬▓ Score: {tuned_r2:.4f}")
+
+--- Cell 8 ---
+import joblib
+
+MODEL_PATH = "demand_model_advanced.pkl"
+SCALER_PATH = "demand_scaler.pkl"
+METADATA_PATH = "model_metadata.pkl"
+
+with open(MODEL_PATH, "wb") as f:
+    pickle.dump(best_model, f)
+
+with open(SCALER_PATH, "wb") as f:
+    pickle.dump(scaler, f)
+
+metadata = {
+    'model_name': best_model_name,
+    'features': FEATURES,
+    'target': TARGET,
+    'r2_score': tuned_r2,
+    'mae': tuned_mae,
+    'rmse': tuned_rmse,
+    'best_params': grid_search.best_params_ if 'grid_search' in locals() else {}
+}
+
+with open(METADATA_PATH, "wb") as f:
+    pickle.dump(metadata, f)
+
+print(f"Γ£à Best model ({best_model_name}) successfully saved!")
+print(f"   Model: {MODEL_PATH}")
+print(f"   Scaler: {SCALER_PATH}")
+print(f"   Metadata: {METADATA_PATH}")
+print(f"\n≡ƒôè Model Performance Summary:")
+print(f"   R┬▓ Score: {tuned_r2:.4f}")
+print(f"   MAE: {tuned_mae:,.2f}")
+print(f"   RMSE: {tuned_rmse:,.2f}")
+print(f"   Features Used: {len(FEATURES)}")
+

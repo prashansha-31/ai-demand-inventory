@@ -1,0 +1,12 @@
+# Single Render Web Service: Docker builds frontend + seeds DB, then FastAPI serves API + UI.
+# New → Blueprint → connect repo → apply this file.
+
+services:
+  - type: web
+    name: ai-demand-inventory
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /
