@@ -1,88 +1,158 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Sales Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Dashboard — NeuralStock</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--cyan:#00f5ff;--purple:#bf00ff;--pink:#ff0080;--bg:#020408;--glass:rgba(0,245,255,0.04);--glass-border:rgba(0,245,255,0.12);--text:#e2f0ff;--dim:rgba(226,240,255,0.5)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,245,255,0.006) 2px,rgba(0,245,255,0.006) 4px);pointer-events:none;z-index:999}
+.orb{position:fixed;border-radius:50%;filter:blur(130px);pointer-events:none;z-index:0}
+.o1{width:600px;height:600px;background:rgba(0,245,255,0.09);top:-150px;left:-150px}
+.o2{width:500px;height:500px;background:rgba(191,0,255,0.09);bottom:-100px;right:-100px}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(2,4,8,0.75);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:1.15rem}
+.logo-box{width:34px;height:34px;background:linear-gradient(135deg,var(--cyan),var(--purple));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;box-shadow:0 0 18px rgba(0,245,255,0.4)}
+.nav-logo span{background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-links{display:flex;gap:6px;list-style:none}
+.nav-links a{color:var(--dim);text-decoration:none;font-size:.88rem;font-weight:500;padding:7px 14px;border-radius:8px;border:1px solid transparent;transition:all .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--cyan);background:rgba(0,245,255,0.07);border-color:rgba(0,245,255,0.2)}
+
+.page{position:relative;z-index:1;padding:100px 32px 60px;max-width:1400px;margin:0 auto}
+.page-tag{font-size:.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.page-tag::before{content:'';width:20px;height:2px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.page-title{font-size:2.4rem;font-weight:900;letter-spacing:-1px;margin-bottom:32px}
+.glow{background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* filter bar */
+.filter-bar{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:20px 24px;display:flex;align-items:center;gap:14px;margin-bottom:28px;flex-wrap:wrap}
+.filter-bar label{font-size:.78rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--dim);flex-shrink:0}
+.filter-input{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text);border-radius:10px;padding:9px 14px;font-size:.88rem;font-family:'Inter',sans-serif;outline:none;transition:all .2s;width:160px}
+.filter-input::placeholder{color:var(--dim)}
+.filter-input:focus{border-color:var(--cyan);background:rgba(0,245,255,0.05);box-shadow:0 0 0 3px rgba(0,245,255,0.1)}
+.btn-filter{padding:9px 20px;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#000;font-weight:700;font-size:.85rem;border:none;border-radius:10px;cursor:pointer;box-shadow:0 0 20px rgba(0,245,255,0.3);transition:all .2s;font-family:'Inter',sans-serif}
+.btn-filter:hover{transform:translateY(-1px);box-shadow:0 0 32px rgba(0,245,255,0.5)}
+.btn-reset{padding:9px 20px;background:transparent;color:var(--dim);font-weight:600;font-size:.85rem;border:1px solid rgba(255,255,255,0.12);border-radius:10px;cursor:pointer;transition:all .2s;text-decoration:none;font-family:'Inter',sans-serif;display:inline-block}
+.btn-reset:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* summary metrics */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px}
+.metric-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:24px;position:relative;overflow:hidden;transition:all .3s}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .3s}
+.metric-card.c1::before{background:linear-gradient(90deg,var(--cyan),#00bcd4)}
+.metric-card.c2::before{background:linear-gradient(90deg,#00ff88,#00cc66)}
+.metric-card.c3::before{background:linear-gradient(90deg,var(--purple),#7b00ff)}
+.metric-card.c4::before{background:linear-gradient(90deg,var(--pink),#ff6b9d)}
+.metric-card:hover{border-color:rgba(0,245,255,0.3);transform:translateY(-4px);box-shadow:0 0 40px rgba(0,245,255,0.08)}
+.metric-card:hover::before{opacity:1}
+.m-icon{font-size:1.8rem;margin-bottom:12px}
+.m-label{font-size:.7rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.m-value{font-size:1.9rem;font-weight:900;letter-spacing:-1px;font-family:'JetBrains Mono',monospace}
+.v-cyan{background:linear-gradient(90deg,var(--cyan),#00bcd4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 10px rgba(0,245,255,0.4))}
+.v-green{background:linear-gradient(90deg,#00ff88,#00cc66);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 10px rgba(0,255,136,0.4))}
+.v-purple{background:linear-gradient(90deg,var(--purple),#7b00ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 10px rgba(191,0,255,0.4))}
+.v-pink{background:linear-gradient(90deg,var(--pink),#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 10px rgba(255,0,128,0.4))}
+
+/* table */
+.table-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;overflow:hidden}
+.table-header{padding:20px 24px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:10px;font-weight:700;font-size:.95rem}
+.accent{width:3px;height:18px;background:linear-gradient(180deg,var(--cyan),var(--purple));border-radius:2px;box-shadow:0 0 8px var(--cyan);flex-shrink:0}
+table{width:100%;border-collapse:collapse}
+thead th{padding:12px 24px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);background:rgba(0,245,255,0.03);border-bottom:1px solid var(--glass-border)}
+tbody tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(0,245,255,0.04)}
+tbody td{padding:14px 24px;font-size:.88rem;color:var(--text)}
+.td-mono{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--cyan)}
+.store-badge{display:inline-block;padding:3px 10px;background:rgba(0,245,255,0.08);border:1px solid rgba(0,245,255,0.15);border-radius:6px;font-size:.75rem;font-weight:600;color:var(--cyan)}
+.dept-badge{display:inline-block;padding:3px 10px;background:rgba(191,0,255,0.08);border:1px solid rgba(191,0,255,0.15);border-radius:6px;font-size:.75rem;font-weight:600;color:var(--purple)}
+</style>
 </head>
 <body>
+<div class="orb o1"></div>
+<div class="orb o2"></div>
 
-<div class="container mt-4">
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="logo-box">⚡</div>
+    <span>NeuralStock</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="/dashboard" class="active">Dashboard</a></li>
+    <li><a href="/forecast">Forecast</a></li>
+    <li><a href="/inventory">Inventory</a></li>
+  </ul>
+</nav>
 
-    <h2 class="mb-4">Sales Dashboard</h2>
+<div class="page">
+  <div class="page-tag">Sales Intelligence</div>
+  <h1 class="page-title">Sales <span class="glow">Dashboard</span></h1>
 
-    <form method="get" action="/dashboard" class="row mb-4">
-    <div class="col-md-3">
-        <input type="number" name="store" class="form-control"
-               placeholder="Filter by Store"
-               value="{{ selected_store or '' }}">
+  <!-- Filter -->
+  <form method="get" action="/dashboard" class="filter-bar">
+    <label>Filter</label>
+    <input type="number" name="store" class="filter-input" placeholder="Store ID" value="{{ selected_store or '' }}">
+    <input type="number" name="dept" class="filter-input" placeholder="Department ID" value="{{ selected_dept or '' }}">
+    <button type="submit" class="btn-filter">⚡ Apply</button>
+    <a href="/dashboard" class="btn-reset">Reset</a>
+  </form>
+
+  <!-- Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-card c1">
+      <div class="m-icon">💰</div>
+      <div class="m-label">Total Sales</div>
+      <div class="m-value v-cyan">{{ "{:,.0f}".format(total_sales) }}</div>
     </div>
-
-    <div class="col-md-3">
-        <input type="number" name="dept" class="form-control"
-               placeholder="Filter by Department"
-               value="{{ selected_dept or '' }}">
+    <div class="metric-card c2">
+      <div class="m-icon">📊</div>
+      <div class="m-label">Avg Weekly Sales</div>
+      <div class="m-value v-green">{{ "{:,.0f}".format(avg_sales) }}</div>
     </div>
-
-    <div class="col-md-3">
-        <button type="submit" class="btn btn-dark">Apply Filter</button>
-        <a href="/dashboard" class="btn btn-secondary">Reset</a>
+    <div class="metric-card c3">
+      <div class="m-icon">🏬</div>
+      <div class="m-label">Total Stores</div>
+      <div class="m-value v-purple">{{ total_stores }}</div>
     </div>
-</form>
-
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-white bg-primary p-3">
-                <h6>Total Sales</h6>
-                <h5>{{ "{:,.2f}".format(total_sales) }}</h5>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card text-white bg-success p-3">
-                <h6>Average Weekly Sales</h6>
-                <h5>{{ "{:,.2f}".format(avg_sales) }}</h5>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card text-white bg-warning p-3">
-                <h6>Total Stores</h6>
-                <h5>{{ total_stores }}</h5>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card text-white bg-danger p-3">
-                <h6>Total Departments</h6>
-                <h5>{{ total_depts }}</h5>
-            </div>
-        </div>
+    <div class="metric-card c4">
+      <div class="m-icon">📦</div>
+      <div class="m-label">Total Departments</div>
+      <div class="m-value v-pink">{{ total_depts }}</div>
     </div>
+  </div>
 
-    <!-- Sales Table -->
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>Store</th>
-                <th>Department</th>
-                <th>Date</th>
-                <th>Weekly Sales</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in data %}
-            <tr>
-                <td>{{ row["store"] }}</td>
-                <td>{{ row["dept"] }}</td>
-                <td>{{ row["date"] }}</td>
-                <td>{{ row["weekly_sales"] }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-header">
+      <span class="accent"></span>
+      📋 Sales Records
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Store</th>
+          <th>Department</th>
+          <th>Date</th>
+          <th>Weekly Sales</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in data %}
+        <tr>
+          <td><span class="store-badge">{{ row["store"] }}</span></td>
+          <td><span class="dept-badge">Dept {{ row["dept"] }}</span></td>
+          <td style="color:var(--dim)">{{ row["date"] }}</td>
+          <td class="td-mono">₹ {{ "{:,.2f}".format(row["weekly_sales"]) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
-
+  </div>
 </div>
-
 </body>
 </html>

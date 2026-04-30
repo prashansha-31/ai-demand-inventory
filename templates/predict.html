@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Predict — NeuralStock</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--cyan:#00f5ff;--purple:#bf00ff;--pink:#ff0080;--green:#00ff88;--yellow:#ffc800;--bg:#020408;--glass:rgba(0,245,255,0.04);--glass-border:rgba(0,245,255,0.12);--text:#e2f0ff;--dim:rgba(226,240,255,0.5)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,245,255,0.006) 2px,rgba(0,245,255,0.006) 4px);pointer-events:none;z-index:999}
+.orb{position:fixed;border-radius:50%;filter:blur(130px);pointer-events:none;z-index:0}
+.o1{width:600px;height:600px;background:rgba(0,245,255,0.1);top:-150px;left:-150px;animation:float1 8s ease-in-out infinite}
+.o2{width:500px;height:500px;background:rgba(191,0,255,0.1);bottom:-100px;right:-100px;animation:float2 9s ease-in-out infinite}
+@keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-30px)}}
+@keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(-20px,20px)}}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(2,4,8,0.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:1.15rem}
+.logo-box{width:34px;height:34px;background:linear-gradient(135deg,var(--cyan),var(--purple));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;box-shadow:0 0 18px rgba(0,245,255,0.4)}
+.nav-logo span{background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-links{display:flex;gap:6px;list-style:none}
+.nav-links a{color:var(--dim);text-decoration:none;font-size:.88rem;font-weight:500;padding:7px 14px;border-radius:8px;border:1px solid transparent;transition:all .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--cyan);background:rgba(0,245,255,0.07);border-color:rgba(0,245,255,0.2)}
+
+.page{position:relative;z-index:1;padding:100px 32px 80px;max-width:960px;margin:0 auto}
+
+.page-tag{font-size:.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.page-tag::before{content:'';width:20px;height:2px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.page-title{font-size:2.6rem;font-weight:900;letter-spacing:-1.5px;margin-bottom:10px}
+.glow{background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.page-sub{color:var(--dim);font-size:.95rem;line-height:1.7;margin-bottom:32px}
+
+/* model status pill */
+.model-status{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:100px;font-size:.8rem;font-weight:600;margin-bottom:32px}
+.ms-ok{background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.25);color:var(--green)}
+.ms-err{background:rgba(255,0,80,0.08);border:1px solid rgba(255,0,80,0.25);color:#ff0050}
+.pulse{width:7px;height:7px;border-radius:50%;animation:pulseAnim 1.5s ease infinite}
+.pulse-green{background:var(--green);box-shadow:0 0 8px var(--green)}
+.pulse-red{background:#ff0050;box-shadow:0 0 8px #ff0050}
+@keyframes pulseAnim{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+
+/* form card */
+.form-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:22px;padding:36px;margin-bottom:24px;position:relative;overflow:hidden}
+.form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--purple));box-shadow:0 0 14px rgba(0,245,255,0.5)}
+.card-label{font-size:.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.card-label .acc{width:3px;height:14px;background:linear-gradient(180deg,var(--cyan),var(--purple));border-radius:2px;box-shadow:0 0 8px var(--cyan)}
+
+.form-grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.form-grid-5{grid-template-columns:1fr 1fr}}
+.form-group{display:flex;flex-direction:column;gap:7px}
+.form-label{font-size:.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim)}
+.form-input{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:var(--text);border-radius:12px;padding:13px 14px;font-size:.9rem;font-family:'Inter',sans-serif;outline:none;transition:all .25s}
+.form-input::placeholder{color:rgba(226,240,255,0.25)}
+.form-input:focus{border-color:var(--cyan);background:rgba(0,245,255,0.05);box-shadow:0 0 0 3px rgba(0,245,255,0.08),0 0 20px rgba(0,245,255,0.08)}
+select.form-input option{background:#0a1628;color:var(--text)}
+
+.btn-predict{width:100%;padding:17px;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#000;font-weight:800;font-size:1rem;border:none;border-radius:12px;cursor:pointer;box-shadow:0 0 40px rgba(0,245,255,0.35),0 4px 24px rgba(0,0,0,0.4);transition:all .3s;font-family:'Inter',sans-serif;letter-spacing:.5px;display:flex;align-items:center;justify-content:center;gap:8px;position:relative;overflow:hidden}
+.btn-predict::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent);opacity:0;transition:opacity .3s}
+.btn-predict:hover{transform:translateY(-2px);box-shadow:0 0 60px rgba(0,245,255,0.55),0 12px 40px rgba(0,0,0,0.5)}
+.btn-predict:hover::before{opacity:1}
+.btn-predict:active{transform:translateY(0)}
+.btn-predict:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* error */
+.error-box{background:rgba(255,0,80,0.06);border:1px solid rgba(255,0,80,0.25);border-radius:14px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:12px;font-size:.88rem;color:#ff6b9d;animation:fadeUp .4s ease both}
+
+/* result */
+.result-wrap{animation:fadeUp .5s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+.result-hero{background:var(--glass);border:1px solid rgba(0,245,255,0.2);border-radius:22px;padding:36px;margin-bottom:20px;text-align:center;position:relative;overflow:hidden}
+.result-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--purple),var(--pink));box-shadow:0 0 20px rgba(0,245,255,0.6);animation:glowLine 2s ease-in-out infinite}
+@keyframes glowLine{0%,100%{opacity:1}50%{opacity:.4}}
+.rh-tag{font-size:.7rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);margin-bottom:16px;opacity:.8}
+.rh-value{font-size:4rem;font-weight:900;font-family:'JetBrains Mono',monospace;background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 30px rgba(0,245,255,0.4));line-height:1;margin-bottom:8px}
+.rh-sub{color:var(--dim);font-size:.9rem}
+.rh-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.2);border-radius:100px;font-size:.78rem;font-weight:600;color:var(--green);margin-top:14px}
+
+.result-meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+@media(max-width:600px){.result-meta-grid{grid-template-columns:1fr}}
+.meta-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:18px;text-align:center}
+.mc-label{font-size:.68rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.mc-val{font-size:1.3rem;font-weight:800;font-family:'JetBrains Mono',monospace}
+.mc-cyan{color:var(--cyan)}
+.mc-purple{color:var(--purple)}
+.mc-green{color:var(--green)}
+
+.lag-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:20px}
+.lag-title{font-size:.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.lag-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+@media(max-width:600px){.lag-grid{grid-template-columns:1fr 1fr}}
+.lag-item{background:rgba(0,0,0,0.3);border-radius:10px;padding:12px;text-align:center}
+.lag-lbl{font-size:.65rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.lag-val{font-size:1rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text)}
+
+.cta-row{display:flex;gap:12px;margin-top:20px}
+.btn-outline{flex:1;padding:13px;text-align:center;text-decoration:none;border:1px solid var(--glass-border);border-radius:12px;font-size:.88rem;font-weight:600;color:var(--dim);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-outline:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,245,255,0.05)}
+.btn-outline-cyan{border-color:rgba(0,245,255,0.3);color:var(--cyan)}
+.btn-outline-cyan:hover{background:rgba(0,245,255,0.08);box-shadow:0 0 20px rgba(0,245,255,0.15)}
+</style>
+</head>
+<body>
+<div class="orb o1"></div>
+<div class="orb o2"></div>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="logo-box">⚡</div>
+    <span>NeuralStock</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="/dashboard">Dashboard</a></li>
+    <li><a href="/predict" class="active">Predict</a></li>
+    <li><a href="/forecast">Forecast</a></li>
+    <li><a href="/inventory">Inventory</a></li>
+  </ul>
+</nav>
+
+<div class="page">
+  <div class="page-tag">Random Forest Engine</div>
+  <h1 class="page-title">AI Demand <span class="glow">Predictor</span></h1>
+  <p class="page-sub">Enter store, department, and time period — the model will predict weekly sales using seasonally-aware lag features from 421,570 historical records.</p>
+
+  {% if model_loaded %}
+  <div class="model-status ms-ok">
+    <span class="pulse pulse-green"></span>
+    {{ model_name }} — R² {{ "%.4f"|format(r2_score) }} — Model Online
+  </div>
+  {% else %}
+  <div class="model-status ms-err">
+    <span class="pulse pulse-red"></span>
+    Model not loaded — check models/ directory
+  </div>
+  {% endif %}
+
+  {% if error %}
+  <div class="error-box">⚠️ {{ error }}</div>
+  {% endif %}
+
+  <div class="form-card">
+    <div class="card-label"><span class="acc"></span> Prediction Parameters</div>
+    <form method="POST" action="/predict">
+      <div class="form-grid-5">
+        <div class="form-group">
+          <label class="form-label" for="p-store">Store ID</label>
+          <input id="p-store" type="number" name="store" class="form-input"
+                 placeholder="1–45" min="1" max="45"
+                 value="{{ result.store if result else '' }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="p-dept">Dept ID</label>
+          <input id="p-dept" type="number" name="dept" class="form-input"
+                 placeholder="1–81" min="1" max="81"
+                 value="{{ result.dept if result else '' }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="p-year">Year</label>
+          <input id="p-year" type="number" name="year" class="form-input"
+                 placeholder="e.g. 2026" min="2010" max="2035"
+                 value="{{ result.year if result else current_year }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="p-month">Month</label>
+          <select id="p-month" name="month" class="form-input" required>
+            {% set months = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+            {% for i in range(1,13) %}
+            <option value="{{ i }}" {% if result and result.month == i %}selected{% endif %}>{{ months[i-1] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="p-week">Week</label>
+          <input id="p-week" type="number" name="week" class="form-input"
+                 placeholder="1–52" min="1" max="52"
+                 value="{{ result.week if result else '' }}" required>
+        </div>
+      </div>
+      <button type="submit" class="btn-predict" {% if not model_loaded %}disabled{% endif %}>
+        🧠 Run AI Prediction
+      </button>
+    </form>
+  </div>
+
+  {% if result %}
+  <div class="result-wrap">
+    <!-- Hero result -->
+    <div class="result-hero">
+      <div class="rh-tag">Predicted Weekly Sales</div>
+      <div class="rh-value">₹ {{ "{:,.0f}".format(result.predicted_sales) }}</div>
+      <div class="rh-sub">Store {{ result.store }} · Dept {{ result.dept }} · {{ result.month_name }} {{ result.year }}, Week {{ result.week }}</div>
+      <div class="rh-badge">✅ Saved to Forecast History</div>
+    </div>
+
+    <!-- Meta -->
+    <div class="result-meta-grid">
+      <div class="meta-card">
+        <div class="mc-label">Store</div>
+        <div class="mc-val mc-cyan">{{ result.store }}</div>
+      </div>
+      <div class="meta-card">
+        <div class="mc-label">Department</div>
+        <div class="mc-val mc-purple">{{ result.dept }}</div>
+      </div>
+      <div class="meta-card">
+        <div class="mc-label">Data Points Used</div>
+        <div class="mc-val mc-green">{{ result.lag_info.data_points_found }}</div>
+      </div>
+    </div>
+
+    <!-- Lag features -->
+    <div class="lag-card">
+      <div class="lag-title">🔬 Model Input Features Used</div>
+      <div class="lag-grid">
+        <div class="lag-item">
+          <div class="lag-lbl">Sales Lag 1</div>
+          <div class="lag-val">{{ "{:,.0f}".format(result.lag_info.sales_lag1) }}</div>
+        </div>
+        <div class="lag-item">
+          <div class="lag-lbl">Sales Lag 4</div>
+          <div class="lag-val">{{ "{:,.0f}".format(result.lag_info.sales_lag4) }}</div>
+        </div>
+        <div class="lag-item">
+          <div class="lag-lbl">Rolling Mean</div>
+          <div class="lag-val">{{ "{:,.0f}".format(result.lag_info.rolling_mean) }}</div>
+        </div>
+        <div class="lag-item">
+          <div class="lag-lbl">Rolling Std</div>
+          <div class="lag-val">{{ "{:,.0f}".format(result.lag_info.rolling_std) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <a href="/forecast" class="btn-outline btn-outline-cyan">📊 View Forecast Dashboard →</a>
+      <a href="/inventory" class="btn-outline">📦 Calculate Inventory Policy</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+</body>
+</html>
