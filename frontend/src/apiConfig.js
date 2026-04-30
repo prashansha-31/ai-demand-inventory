@@ -3,6 +3,7 @@
  * - Optional VITE_API_URL override (split deploy / custom backend).
  * - Production default: same origin (empty string → `/api/...`) when UI is served by FastAPI.
  * - Dev default: local uvicorn on port 8000.
+ * - For production deployment, ensure VITE_API_URL is set if using separate services.
  */
 export const getApiBaseUrl = () => {
   const env = import.meta.env.VITE_API_URL;
