@@ -104,6 +104,12 @@ This project is fully Dockerized and ready for production deployment on Render.
 5. Add an Environment Variable: `PORT` = `8000`.
 6. Click **Deploy**. Render will automatically install dependencies, build the SQLite database via `init_db.py`, and start the app using Gunicorn.
 
+## Troubleshooting
+
+- If the build fails, check the logs for missing dependencies or large files.
+- Ensure the database is properly initialized by verifying `init_db.py` runs without errors.
+- For frontend issues, confirm the build process completes successfully.
+
 ---
 
 ## 📈 Machine Learning Details
