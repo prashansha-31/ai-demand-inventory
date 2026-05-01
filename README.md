@@ -109,6 +109,8 @@ This project is fully Dockerized and ready for production deployment on Render.
 4. Leave the Root Directory blank.  
 5. Add an environment variable: `PORT = 8000`.  
 6. Click **Deploy**. Render will automatically install dependencies, build the SQLite database using `init_db.py`, and start the app with Gunicorn.  
+🔗 Live Application
+👉 https://ai-demand-inventory-xglw.onrender.com
 
 ---
 
